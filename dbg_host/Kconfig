@@ -1,0 +1,5 @@
+source "drivers/hisi/npu/drivers/unreleased/debug/dbg/dbg_slave/Kconfig"
+
+config HOST_DBG_DEVDRV
+	tristate "HOST DBG DEVDRV"
+	default m

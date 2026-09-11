@@ -1,0 +1,10 @@
+--- uda_access.c	2023-10-26 11:52:55.161030628 +0800
++++ "uda_access copy.c"	2023-11-01 14:45:45.657176320 +0800
+@@ -1493,6 +1493,7 @@
+ 
+ int devdrv_manager_container_logical_id_to_physical_id(u32 logical_dev_id, u32 *physical_dev_id, u32 *vfid)
+ {
++    uda_err("uda patch: logical id to phycical id.\n");
+     return uda_devid_to_phy_devid(logical_dev_id, physical_dev_id, vfid);
+ }
+ EXPORT_SYMBOL(devdrv_manager_container_logical_id_to_physical_id);

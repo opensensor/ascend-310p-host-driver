@@ -1,0 +1,1 @@
+../drv_devmng_host/ascend910/drv_log.c

@@ -1,0 +1,1 @@
+../hdc_host/hdcdrv_core_com.h

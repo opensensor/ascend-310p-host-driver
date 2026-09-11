@@ -1,0 +1,1 @@
+../xsmem_ns_adapt.c
