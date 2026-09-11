@@ -1,6 +1,6 @@
 # Ascend 310P host driver: Linux 7 port
 
-Local source fork of the host kernel tree shipped in Huawei's
+OpenSensor source fork of the host kernel tree shipped in Huawei's
 `Ascend-hdk-310p-npu-driver_26.0.rc1_linux-x86-64.run`.
 
 **The bare-metal profile builds 31 x86-64 modules on Ubuntu's
@@ -110,4 +110,5 @@ The package was obtained from the
 Individual vendor file notices are retained. Most C sources carry GPLv2 notices;
 some build files carry CANN license text. This fork does not assign a blanket
 license to vendor material. Newly added port helpers and tests use
-`GPL-2.0-only`. No remote repository has been created or published.
+`GPL-2.0-only`. The source repository is
+[opensensor/ascend-310p-host-driver](https://github.com/opensensor/ascend-310p-host-driver).
