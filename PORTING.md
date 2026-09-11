@@ -42,16 +42,27 @@ Primary references:
 
 The full vendor build fails in `vascend_drv/kvmdt.c` on removed `gfn_to_pfn`
 and `kvm_release_pfn_clean`, and in `vascend_drv/dma_pool_pt.c` on removed
-`iommu_domain_alloc`. More fundamentally, target-kernel exports including
-`kvm_read_guest`, `kvm_write_guest`, `gfn_to_hva`, and `gfn_to_memslot` are
-restricted to the namespace `module:kvm-amd,kvm-intel`.
+`iommu_domain_alloc`. The active modern-kernel path also calls
+`kvm_is_visible_gfn` from `kvmdt_is_valid_gfn`; the target kernel restricts
+that export to `module:kvm-amd,kvm-intel`. The build guard checks this actual
+remaining dependency.
 
 The [Linux 7 namespace rules](https://github.com/torvalds/linux/blob/v7.0/Documentation/core-api/symbol-namespaces.rst)
-and [KVM implementation](https://github.com/torvalds/linux/blob/v7.0/virt/kvm/kvm_main.c)
 make these private exports different from an ordinary importable namespace.
-Adding `MODULE_IMPORT_NS` is insufficient. A real virtualization port requires
-reworking the integration around supported interfaces or coordinated kernel
-changes. This fork rejects that build profile on the target kernel.
+Adding `MODULE_IMPORT_NS` is insufficient.
+
+A closer source trace corrects the initial audit: although `kvm_read_guest`,
+`kvm_write_guest`, `gfn_to_hva`, and `gfn_to_memslot` are also private exports,
+they are not established dependencies of this module's Linux 7 build. The
+read/write calls in `vfio_ops.c` belong to an older-kernel branch. The active
+path already uses `vfio_dma_rw`, VFIO pin/unpin operations, and IOMMUFD callbacks.
+
+A driver-only port may be possible by replacing the remaining PFN translation
+and visibility operations with appropriate supported VFIO interfaces, updating
+IOMMU allocation, and reviewing memory-slot enumeration and invalidation.
+Those replacements still need implementation and correctness testing. A kernel
+patch is not an established prerequisite, and no claim of working vNPU support
+is made. The current build excludes this module.
 
 ## Reproduction and evidence
 

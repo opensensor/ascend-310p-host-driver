@@ -44,7 +44,7 @@ The defaults are `TARGET_PRODUCT=mini`, `Driver_Install_Mode=normal`, and
 
 `BUILD_VASCEND=y` retains the vendor module selection for future virtualization
 work. The normal build entry point rejects it when the target kernel restricts
-`kvm_read_guest` to KVM modules. It is not a supported build on Linux 7.
+`kvm_is_visible_gfn` to KVM modules. It is not a supported build on Linux 7.
 The vendor guest-mode configuration remains in the source but is unvalidated.
 
 ## Changes

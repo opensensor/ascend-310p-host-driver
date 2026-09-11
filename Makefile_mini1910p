@@ -98,7 +98,7 @@ all: check-config
 check-config:
 	@case "$(BUILD_VASCEND)" in y|n) ;; *) echo "BUILD_VASCEND must be y or n" >&2; exit 1;; esac
 	@if [ "$(BUILD_VASCEND)" = y ] && \
-	    awk '$$2 == "kvm_read_guest" && $$5 ~ /^module:/ { found=1 } END { exit !found }' \
+	    awk '$$2 == "kvm_is_visible_gfn" && $$5 ~ /^module:/ { found=1 } END { exit !found }' \
 	    /lib/modules/$(KERNEL_UNAME)/build/Module.symvers; then \
 	    echo "drv_vascend requires KVM APIs restricted to KVM modules by this kernel; use BUILD_VASCEND=n for bare metal." >&2; \
 	    exit 1; \
