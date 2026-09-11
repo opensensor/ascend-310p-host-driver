@@ -115,12 +115,13 @@ void vm_dom_info_release(struct kref *ref)
     kfree(vm_dom);
 }
 
-struct vm_dom_info *vm_dom_info_find(const struct kvm *kvm)
+struct vm_dom_info *vm_dom_info_find(const struct kvm *kvm,
+                                         struct vfio_device *pin_owner)
 {
     struct vm_dom_info *vm_dom = NULL;
 
     list_for_each_entry(vm_dom, &g_vm_domains, node) {
-        if (vm_dom->kvm == kvm) {
+        if (vm_dom->kvm == kvm && vm_dom->pin_owner == pin_owner) {
             return vm_dom;
         }
     }
@@ -128,7 +129,8 @@ struct vm_dom_info *vm_dom_info_find(const struct kvm *kvm)
     return NULL;
 }
 
-struct vm_dom_info *vm_dom_info_new(struct kvm *kvm)
+struct vm_dom_info *vm_dom_info_new(struct kvm *kvm,
+                                         struct vfio_device *pin_owner)
 {
     struct vm_dom_info *vm_dom =
         (struct vm_dom_info *)kzalloc(sizeof(struct vm_dom_info), GFP_KERNEL);
@@ -144,6 +146,7 @@ struct vm_dom_info *vm_dom_info_new(struct kvm *kvm)
     }
 
     vm_dom->kvm = kvm;
+    vm_dom->pin_owner = pin_owner;
     vm_dom->status = DOMAIN_PIN_STATUS_INVALID;
     init_rwsem(&vm_dom->sem);
     kref_init(&vm_dom->ref);
@@ -156,15 +159,16 @@ struct vm_dom_info *vm_dom_info_new(struct kvm *kvm)
     return vm_dom;
 }
 
-struct vm_dom_info *vm_dom_info_get(struct kvm *kvm)
+struct vm_dom_info *vm_dom_info_get(struct kvm *kvm,
+                                         struct vfio_device *pin_owner)
 {
     struct vm_dom_info *vm_dom = NULL;
 
-    vm_dom = vm_dom_info_find(kvm);
+    vm_dom = vm_dom_info_find(kvm, pin_owner);
     if (vm_dom) {
         kref_get(&vm_dom->ref);
         return vm_dom;
     }
 
-    return vm_dom_info_new(kvm);
+    return vm_dom_info_new(kvm, pin_owner);
 }

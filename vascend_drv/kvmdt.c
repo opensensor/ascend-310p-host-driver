@@ -40,6 +40,8 @@
 #include <linux/sched/signal.h>
 
 #include "dma_pool.h"
+#include "guest_memory.h"
+#include "guest_slots.h"
 #include "vfio_ops.h"
 #include "dvt_sysfs.h"
 #include "dvt.h"
@@ -195,6 +197,8 @@ struct hw_vdavinci *hw_vdavinci_create(struct kobject *kobj, struct mdev_device 
     hw_dvt_update_vdavinci_types(dvt, pf_info->dev_index);
     mutex_unlock(&dvt->lock);
 
+    /* VFIO may invalidate DMA before open_device and after close_device. */
+    mutex_init(&vdavinci->vdev.cache_lock);
     INIT_WORK(&vdavinci->vdev.release_work, hw_vdavinci_release_work);
 
     vdavinci->vfg_id = type->vfg_id;
@@ -223,6 +227,7 @@ int hw_vdavinci_remove(struct mdev_device *mdev)
     }
 
     mutex_lock(&dvt->lock);
+    mutex_destroy(&vdavinci->vdev.cache_lock);
     g_hw_vdavinci_ops.vdavinci_destroy(vdavinci);
 
     type->vf_num--;
@@ -1178,6 +1183,20 @@ STATIC int kvmdt_write_gpa(uintptr_t handle, unsigned long gpa,
 
 STATIC unsigned long kvmdt_gfn_to_mfn(uintptr_t handle, unsigned long gfn)
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+    struct kvmdt_guest_info *info = (struct kvmdt_guest_info *)handle;
+    unsigned long pfn;
+
+    if (!handle_valid(handle)) {
+        return ~0UL;
+    }
+    /* An invalidation callback must wait for this temporary pin to drain. */
+    mutex_lock(&info->vdavinci->vdev.cache_lock);
+    pfn = info->vdavinci->vdev.domain ?
+        vdavinci_lookup_guest_pfn(info->vdavinci->vdev.vfio_device, gfn) : ~0UL;
+    mutex_unlock(&info->vdavinci->vdev.cache_lock);
+    return pfn;
+#else
     unsigned long pfn = 0;
 #if (IS_VDAVINCI_KERNEL_VERSION_SUPPORT || (defined(DRV_UT)))
     struct kvmdt_guest_info *info = (struct kvmdt_guest_info *)handle;
@@ -1209,6 +1228,7 @@ STATIC unsigned long kvmdt_gfn_to_mfn(uintptr_t handle, unsigned long gfn)
     kvm_release_pfn_clean(pfn);
 #endif
     return pfn;
+#endif
 }
 
 STATIC int kvmdt_guest_init(struct mdev_device *mdev)
@@ -1233,7 +1253,6 @@ STATIC int kvmdt_guest_init(struct mdev_device *mdev)
     if (info == NULL) {
         return -ENOMEM;
     }
-    mutex_init(&vdavinci->vdev.cache_lock);
     vdavinci->handle = (uintptr_t)info;
     info->vdavinci = vdavinci;
     info->kvm = kvm;
@@ -1242,56 +1261,58 @@ STATIC int kvmdt_guest_init(struct mdev_device *mdev)
     return 0;
 }
 
-/* release vm domain info and unpin pages */
-STATIC void hw_vdavinci_release_vm_domain(struct hw_vdavinci *vdavinci)
+/* Serialize domain detachment with DMA queries and VFIO invalidations. */
+void hw_vdavinci_release_vm_domain(struct hw_vdavinci *vdavinci)
 {
     struct mutex *g_vm_domains_lock = get_vm_domains_lock();
-    struct vm_dom_info *vm_dom =
-                (struct vm_dom_info *)vdavinci->vdev.domain;
+    struct vm_dom_info *vm_dom;
 
-    if (vm_dom != NULL) {
-        if (vdavinci_refcount_mutex_lock(&vm_dom->ref.refcount, g_vm_domains_lock)) {
-            mutex_unlock(g_vm_domains_lock);
+    mutex_lock(&vdavinci->vdev.cache_lock);
+    vm_dom = vdavinci->vdev.domain;
+    vdavinci->vdev.domain = NULL;
+    if (vm_dom != NULL &&
+        vdavinci_refcount_mutex_lock(&vm_dom->ref.refcount, g_vm_domains_lock)) {
+        /* Do not let another open find a domain whose last reference expired. */
+        list_del_init(&vm_dom->node);
+        mutex_unlock(g_vm_domains_lock);
 
-            hw_vdavinci_unpin_pages(vdavinci);
+        hw_vdavinci_unpin_pages(vdavinci, vm_dom);
 
-            mutex_lock(g_vm_domains_lock);
-            vm_dom_info_release(&vm_dom->ref);
-            vdavinci->vdev.domain = NULL;
-            mutex_unlock(g_vm_domains_lock);
-        }
+        mutex_lock(g_vm_domains_lock);
+        vm_dom_info_release(&vm_dom->ref);
+        mutex_unlock(g_vm_domains_lock);
     }
+    mutex_unlock(&vdavinci->vdev.cache_lock);
 }
 
 STATIC void kvmdt_guest_exit(struct kvmdt_guest_info *info)
 {
     debugfs_remove(info->debugfs_cache_entries);
-    kvm_put_kvm(info->kvm);
     hw_vdavinci_dma_pool_uninit(info->vdavinci);
     hw_vdavinci_release_vm_domain(info->vdavinci);
-    mutex_destroy(&info->vdavinci->vdev.cache_lock);
+    kvm_put_kvm(info->kvm);
     vfree(info);
 }
 
 STATIC bool kvmdt_is_valid_gfn(uintptr_t handle, unsigned long gfn)
 {
-    bool ret = false;
-    int idx;
-    struct kvm *kvm = NULL;
-    struct kvmdt_guest_info *info = NULL;
+    struct kvmdt_guest_info *info = (struct kvmdt_guest_info *)handle;
 
     if (!handle_valid(handle)) {
         return false;
     }
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 0, 0)
+    return vdavinci_guest_gfn_visible(info->kvm, gfn);
+#else
+    {
+        bool ret;
+        int idx = srcu_read_lock(&info->kvm->srcu);
 
-    info = (struct kvmdt_guest_info *)handle;
-    kvm = info->kvm;
-
-    idx = srcu_read_lock(&kvm->srcu);
-    ret = kvm_is_visible_gfn(kvm, gfn);
-    srcu_read_unlock(&kvm->srcu, idx);
-
-    return ret;
+        ret = kvm_is_visible_gfn(info->kvm, gfn);
+        srcu_read_unlock(&info->kvm->srcu, idx);
+        return ret;
+    }
+#endif
 }
 
 STATIC int kvmdt_get_mmio_info(void **dst, int *size, void *_vdavinci, int bar)

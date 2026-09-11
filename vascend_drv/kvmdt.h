@@ -89,6 +89,7 @@ bool get_node_cpu_by_page(struct hw_vdavinci *vdavinci,
 struct hw_vdavinci *hw_vdavinci_create(struct kobject *kobj, struct mdev_device *mdev);
 int hw_vdavinci_remove(struct mdev_device *mdev);
 int hw_vdavinci_open(struct mdev_device *mdev);
+void hw_vdavinci_release_vm_domain(struct hw_vdavinci *vdavinci);
 void hw_vdavinci_release(struct mdev_device *mdev);
 ssize_t hw_vdavinci_read(struct mdev_device *mdev, char __user *buf,
                          size_t count, loff_t *ppos);

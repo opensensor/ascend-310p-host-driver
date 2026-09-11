@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-2.0-only
-"""Validate the bare-metal modules without installing or loading anything."""
+"""Validate a host module profile without installing or loading anything."""
 
 import argparse
 import hashlib
@@ -25,17 +25,23 @@ def require(condition, message):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("kernel_release")
+    parser.add_argument(
+        "--profile", choices=("bare-metal", "virtualization"), default="bare-metal"
+    )
     args = parser.parse_args()
+    virtual = args.profile == "virtualization"
+    expected_count = 32 if virtual else 31
     root = Path(__file__).resolve().parents[1]
     kernel = Path("/lib/modules") / args.kernel_release / "build"
     manifest = command(
         "bash",
         "-c",
-        'Driver_Install_Mode=normal; BUILD_VASCEND=n; source "$1"; '
+        'Driver_Install_Mode=normal; BUILD_VASCEND=$2; source "$1"; '
         'for i in "${!BUILT_MODULE_NAME[@]}"; do '
         'printf "%s/%s.ko\\n" "${BUILT_MODULE_LOCATION[$i]}" "${BUILT_MODULE_NAME[$i]}"; done',
         "manifest",
         str(root / "dkms.conf"),
+        "y" if virtual else "n",
     ).splitlines()
     built = {
         str(Path(line).with_suffix(".ko"))
@@ -44,7 +50,10 @@ def main():
     require(
         built == set(manifest), f"Module inventory mismatch: {built ^ set(manifest)}"
     )
-    require(len(built) == 31, f"Expected 31 bare-metal modules, found {len(built)}")
+    require(
+        len(built) == expected_count,
+        f"Expected {expected_count} {args.profile} modules, found {len(built)}",
+    )
 
     exports = {}
     for source in (kernel / "Module.symvers", root / "Module.symvers"):
@@ -52,6 +61,14 @@ def main():
             crc, name, provider, kind, namespace = line.split("\t")
             require(name not in exports, f"Duplicate export: {name}")
             exports[name] = (int(crc, 16), provider, kind, namespace)
+
+    # The vendor obtains this modern guest-memory API through symbol_get(),
+    # so it does not appear in the module's ordinary undefined-symbol table.
+    if virtual:
+        require("vfio_dma_rw" in exports, "Missing runtime export vfio_dma_rw")
+        require(
+            not exports["vfio_dma_rw"][3], "vfio_dma_rw has a namespace restriction"
+        )
 
     modules = []
     for relative in sorted(built):
@@ -95,6 +112,37 @@ def main():
                 "depends": command("modinfo", "-F", "depends", str(module)),
             }
         )
+    # depmod needs actual provider modules for modular kernel exports; a
+    # Module.symvers file alone only supplies its built-in export lookup.
+    built_names = {Path(relative).stem for relative in built}
+    pending = {
+        dependency
+        for module in modules
+        for dependency in module["depends"].split(",")
+        if dependency
+    } - built_names
+    kernel_dependencies = {}
+    visited = set()
+    while pending:
+        name = pending.pop()
+        if name in visited or name in built_names:
+            continue
+        visited.add(name)
+        filename = command("modinfo", "-k", args.kernel_release, "-F", "filename", name)
+        if filename == "(builtin)":
+            continue
+        provider = Path(filename)
+        provider_vermagic = command("modinfo", "-F", "vermagic", str(provider))
+        require(provider_vermagic.split()[0] == args.kernel_release, filename)
+        kernel_dependencies[name] = provider
+        pending.update(
+            dependency
+            for dependency in command("modinfo", "-F", "depends", str(provider)).split(
+                ","
+            )
+            if dependency
+        )
+
     # depmod reads a temporary module tree; -n prevents database writes.
     with tempfile.TemporaryDirectory(prefix="ascend-module-check-") as temporary:
         module_dir = Path(temporary) / "lib/modules" / args.kernel_release
@@ -102,6 +150,11 @@ def main():
         update_dir.mkdir(parents=True)
         for relative in sorted(built):
             shutil.copyfile(root / relative, update_dir / Path(relative).name)
+        if kernel_dependencies:
+            dependency_dir = module_dir / "kernel"
+            dependency_dir.mkdir()
+            for provider in kernel_dependencies.values():
+                shutil.copyfile(provider, dependency_dir / provider.name)
         (module_dir / "modules.order").write_text(
             "".join(f"updates/ascend/{Path(p).name}\n" for p in sorted(built))
         )
@@ -124,22 +177,32 @@ def main():
         )
         require(not result.stderr, f"depmod diagnostics: {result.stderr}")
 
-    output = root / "build-artifacts" / args.kernel_release / "validation.json"
+    output = (
+        root
+        / "build-artifacts"
+        / args.kernel_release
+        / args.profile
+        / "validation.json"
+    )
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
         json.dumps(
             {
                 "kernel_release": args.kernel_release,
-                "profile": "bare-metal",
-                "excluded_module": "drv_vascend",
+                "profile": args.profile,
+                "excluded_module": None if virtual else "drv_vascend",
                 "module_count": len(modules),
+                "kernel_dependencies": {
+                    name: str(path)
+                    for name, path in sorted(kernel_dependencies.items())
+                },
                 "modules": modules,
             },
             indent=2,
         )
         + "\n"
     )
-    bundle = output.parent / f"ascend-310p-bare-metal-{args.kernel_release}.tar.gz"
+    bundle = output.parent / f"ascend-310p-{args.profile}-{args.kernel_release}.tar.gz"
     with tarfile.open(bundle, "w:gz") as archive:
         for relative in sorted(built):
             archive.add(root / relative, arcname=relative)

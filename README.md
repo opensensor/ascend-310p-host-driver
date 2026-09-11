@@ -3,12 +3,11 @@
 OpenSensor source fork of the host kernel tree shipped in Huawei's
 `Ascend-hdk-310p-npu-driver_26.0.rc1_linux-x86-64.run`.
 
-**The bare-metal profile builds 31 x86-64 modules on Ubuntu's
-`7.0.0-31-generic` kernel.** The vendor's 32nd normal-mode module,
-`drv_vascend`, implements mediated vNPU virtualization and is excluded.
-Its KVM interfaces are unavailable to this driver on the target kernel.
-This is a compile-validated port; it has not been installed, loaded, or
-tested with an Ascend card.
+**Both profiles build on Ubuntu's x86-64 `7.0.0-31-generic` kernel:**
+31 bare-metal modules by default, or all 32 modules with mediated vNPU
+virtualization enabled. The virtualization port requires driver changes only;
+no kernel patch or KVM-private export is used. This is a compile-validated port;
+it has not been installed, loaded, or tested with an Ascend card.
 
 ## Build and validate
 
@@ -19,15 +18,18 @@ The tested compiler is Ubuntu's `x86_64-linux-gnu-gcc` 15.2.0-16ubuntu1.
 ```bash
 ./scripts/build-host.sh
 # Or explicitly select the installed target headers:
-./scripts/build-host.sh 7.0.0-31-generic
+./scripts/build-host.sh 7.0.0-31-generic bare-metal
+# Include drv_vascend for mediated vNPU virtualization:
+./scripts/build-host.sh 7.0.0-31-generic virtualization
 ```
 
-The script cleans previous build products, builds all bare-metal modules,
+The script cleans previous build products, builds the selected profile,
 runs the CPU-only regression tests, and verifies every module's architecture,
 kernel release, undefined symbols, symbol-version CRCs, and namespace imports.
 It does not install software, register DKMS, or load modules. Build logs go to
 `build-logs/`; the JSON validation manifest and a compressed module bundle go to
-`build-artifacts/<kernel-release>/`.
+`build-artifacts/<kernel-release>/<profile>/`. The verifier also uses matching
+installed VFIO/KVM dependency modules for its isolated depmod check.
 
 For incremental development:
 
@@ -42,9 +44,8 @@ The defaults are `TARGET_PRODUCT=mini`, `Driver_Install_Mode=normal`, and
 310P product configuration. DKMS's normal-mode module list matches the
 31-module build; DKMS installation itself has not been tested.
 
-`BUILD_VASCEND=y` retains the vendor module selection for future virtualization
-work. The normal build entry point rejects it when the target kernel restricts
-`kvm_is_visible_gfn` to KVM modules. It is not a supported build on Linux 7.
+For incremental virtualization builds use `make all BUILD_VASCEND=y
+CC=x86_64-linux-gnu-gcc`, then run the verifier with `--profile virtualization`.
 The vendor guest-mode configuration remains in the source but is unvalidated.
 
 ## Changes
@@ -63,6 +64,12 @@ The vendor guest-mode configuration remains in the source but is unvalidated.
 - Preserve the exported CRC-table accessor using a local immutable CRC-16/IBM
   table after the kernel made its table private.
 - Use `GPIOF_IN` and supply missing module descriptions.
+- Replace virtualization's removed PFN translation APIs with balanced VFIO
+  pins, and its private visibility call with header-defined KVM slot lookup
+  under SRCU. Update IOMMU domain allocation and error cleanup for Linux 7.
+- Give each modern VFIO device its own guest DMA pin cache. Serialize cache
+  lifetime with callbacks, unwind failed opens, and invalidate every intersecting
+  cached RAM slot before returning from a VFIO unmap callback.
 
 No userspace ioctl definitions, HAL libraries, device firmware, or device OS
 files were changed. The original userspace ABI is an implementation constraint;
@@ -71,15 +78,24 @@ successful compilation does not establish HAL interoperability.
 ## Validation and limits
 
 The clean Linux `7.0.0-31-generic` build passes strict modpost with zero
-unresolved-symbol or namespace errors. All 31 modules have matching vermagic,
+unresolved-symbol or namespace errors in both profiles. All 32 modules in the
+virtualization profile have matching vermagic,
 and all strong undefined symbols and recorded CRCs resolve against either the
 target kernel's exports or this build's exports. An isolated `depmod -n -e -E`
 check also found no missing symbols or version disagreements.
 
-CPU regression tests cover PFN lookup success, rejection of unsupported VMAs,
-lookup failure, balanced start/end calls, CRC known vectors, and alignment of
-DKMS's module-name/location arrays. These tests do not exercise kernel memory
-concurrency or hardware.
+Seven CPU regression tests cover PFN lookup and lock pairing, CRC known vectors,
+DKMS module arrays, VFIO full/partial/error pin ownership, KVM slot visibility,
+IOMMU allocation and group-reference cleanup, failed guest opens, device-specific
+pin ownership, and repeated/partial/multi-slot/full-space invalidations. The
+lifecycle tests compile the actual driver functions with mocked kernel operations.
+They do not exercise real kernel concurrency or hardware.
+
+Invalidation conservatively retires an entire intersecting cached RAM slot.
+Live remapping, ballooning, and memory hotplug are not validated; reopening the
+vNPU is required to rebuild retired slots. Per-device caches also pin guest RAM
+separately for each vNPU, which can increase locked-memory accounting. Neither
+VFIO type1 nor IOMMUFD has been tested with an actual guest.
 
 Existing vendor compiler warnings remain (missing prototypes, fallthrough, a
 debug callback cast, and a debug log format mismatch). Module BTF generation is

@@ -56,6 +56,8 @@ struct reserve_mem {
 struct vm_dom_info {
     struct list_head node;
     struct kvm *kvm;
+    /* VFIO/IOMMUFD pins belong to one device; NULL keeps legacy sharing. */
+    struct vfio_device *pin_owner;
     int status;
     struct rw_semaphore sem;
     struct kref ref;
@@ -79,8 +81,11 @@ void dev_dom_info_put(struct dev_dom_info *dev_dom,
 int dma_domain_add_reserve_mem(struct vm_dom_info *vm_dom,
                                unsigned long pfn_lo, unsigned long pfn_hi);
 void vm_dom_info_release(struct kref *ref);
-struct vm_dom_info *vm_dom_info_find(const struct kvm *kvm);
-struct vm_dom_info *vm_dom_info_new(struct kvm *kvm);
-struct vm_dom_info *vm_dom_info_get(struct kvm *kvm);
+struct vm_dom_info *vm_dom_info_find(const struct kvm *kvm,
+                                         struct vfio_device *pin_owner);
+struct vm_dom_info *vm_dom_info_new(struct kvm *kvm,
+                                         struct vfio_device *pin_owner);
+struct vm_dom_info *vm_dom_info_get(struct kvm *kvm,
+                                         struct vfio_device *pin_owner);
 
 #endif

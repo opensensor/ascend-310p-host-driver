@@ -1,5 +1,4 @@
-# The Linux 7 KVM APIs used by drv_vascend are private to KVM modules.
-# Build the physical-device stack by default. Opt in for older supported kernels.
+# Keep physical-device operation as the default; virtualization is opt-in.
 BUILD_VASCEND ?= n
 TARGET_PRODUCT ?= mini
 Driver_Install_Mode ?= normal
@@ -97,12 +96,7 @@ all: check-config
 	$(MAKE) --jobs=$(DKMS_JOBS) -C /lib/modules/$(KERNEL_UNAME)/build M=$(PWD) KBUILD_MODPOST_WARN= CFLAGS_MODULE=${DKMS_EXTRA_CFLAGS} modules
 check-config:
 	@case "$(BUILD_VASCEND)" in y|n) ;; *) echo "BUILD_VASCEND must be y or n" >&2; exit 1;; esac
-	@if [ "$(BUILD_VASCEND)" = y ] && \
-	    awk '$$2 == "kvm_is_visible_gfn" && $$5 ~ /^module:/ { found=1 } END { exit !found }' \
-	    /lib/modules/$(KERNEL_UNAME)/build/Module.symvers; then \
-	    echo "drv_vascend requires KVM APIs restricted to KVM modules by this kernel; use BUILD_VASCEND=n for bare metal." >&2; \
-	    exit 1; \
-	fi
+
 clean:
 	$(MAKE) --jobs=$(DKMS_JOBS) -C /lib/modules/$(KERNEL_UNAME)/build M=$(PWD) clean
 

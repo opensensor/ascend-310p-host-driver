@@ -24,6 +24,7 @@
 #include "vfio_ops.h"
 #include "kvmdt.h"
 #include "dma_pool.h"
+#include "guest_dma_range.h"
 
 /**
  * try to get rwsem down lock or read lock,
@@ -474,37 +475,38 @@ STATIC void dma_dom_pool_unpin(struct hw_vdavinci *vdavinci, struct vm_dom_info 
     vm_dom->status = DOMAIN_PIN_STATUS_INVALID;
 }
 
-/**
- * do unpin pages alone
- */
-void hw_vdavinci_unpin_pages(struct hw_vdavinci *vdavinci)
+/* Caller holds cache_lock, including when the domain has been detached. */
+void hw_vdavinci_unpin_pages(struct hw_vdavinci *vdavinci, struct vm_dom_info *vm_dom)
 {
-    struct vm_dom_info *vm_dom = (struct vm_dom_info *)vdavinci->vdev.domain;
     struct device *dev = vdavinci_get_device(vdavinci);
 
-    mutex_lock(&vdavinci->vdev.cache_lock);
-    if (vm_dom && vm_dom->status != DOMAIN_PIN_STATUS_INVALID) {
+    if (!vm_dom) {
+        return;
+    }
+    /* Drain DMA-query readers even if pool initialization never succeeded. */
+    down_write(&vm_dom->sem);
+    if (vm_dom->status != DOMAIN_PIN_STATUS_INVALID) {
         vascend_info(dev, "dma pool unpin pages start\n");
-        down_write(&vm_dom->sem);
         dma_dom_pool_unpin(vdavinci, vm_dom);
-        up_write(&vm_dom->sem);
         vascend_info(dev, "dma pool unpin pages end\n");
     }
-    mutex_unlock(&vdavinci->vdev.cache_lock);
+    up_write(&vm_dom->sem);
 }
 
 void hw_vdavinci_dma_pool_uninit(struct hw_vdavinci *vdavinci)
 {
-    struct vm_dom_info *vm_dom = (struct vm_dom_info *)vdavinci->vdev.domain;
+    struct vm_dom_info *vm_dom;
     struct device *dev = vdavinci_get_device(vdavinci);
     struct dev_dom_info *dev_dom = NULL;
 
+    mutex_lock(&vdavinci->vdev.cache_lock);
+    vm_dom = vdavinci->vdev.domain;
     if (!vm_dom) {
         vascend_err(dev, "dma pool uninit failed\n");
+        mutex_unlock(&vdavinci->vdev.cache_lock);
         return;
     }
     vascend_info(dev, "dma pool uninit start\n");
-    mutex_lock(&vdavinci->vdev.cache_lock);
     down_write(&vm_dom->sem);
     dev_dom = dev_dom_info_find(vm_dom, vdavinci);
     if (!dev_dom) {
@@ -513,9 +515,8 @@ void hw_vdavinci_dma_pool_uninit(struct hw_vdavinci *vdavinci)
         mutex_unlock(&vdavinci->vdev.cache_lock);
         return;
     }
-    up_write(&vm_dom->sem);
-
     dev_dom_info_put(dev_dom, vdavinci);
+    up_write(&vm_dom->sem);
 
     mutex_unlock(&vdavinci->vdev.cache_lock);
     vascend_info(dev, "dma pool uninit success\n");
@@ -635,6 +636,11 @@ STATIC int raminfo_list_init(struct hw_vdavinci *vdavinci,
     slots = kvm_memslots(vdavinci->vdev.kvm);
 
     vdavinci_for_each_memslot(slot, slots, iter) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 0, 0)
+        if (!kvm_is_visible_memslot(slot)) {
+            continue;
+        }
+#endif
         if (slot->flags & KVM_MEM_READONLY) {
             continue;
         }
@@ -662,7 +668,9 @@ STATIC int dma_dom_pool_pin(struct hw_vdavinci *vdavinci, struct vm_dom_info *vm
     int ret_t = 0, ret = 0;
     struct ram_range_info *ram_info = NULL;
     struct list_head slot_ram_list;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 0, 0)
     unsigned long pfn = 0;
+#endif
     struct list_head *pos = NULL, *next = NULL;
 
     INIT_LIST_HEAD(&(slot_ram_list));
@@ -674,6 +682,7 @@ STATIC int dma_dom_pool_pin(struct hw_vdavinci *vdavinci, struct vm_dom_info *vm
 
     list_for_each_safe(pos, next, &(slot_ram_list)) {
         ram_info = list_entry(pos, struct ram_range_info, list);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 0, 0)
         pfn = g_hw_kvmdt_ops.gfn_to_mfn(vdavinci->handle, ram_info->base_gfn);
         if (!page_is_ram(pfn)) {
             vascend_warn(vdavinci_to_dev(vdavinci),
@@ -681,6 +690,8 @@ STATIC int dma_dom_pool_pin(struct hw_vdavinci *vdavinci, struct vm_dom_info *vm
             continue;
         }
 
+#endif
+        /* VFIO pins and the per-page pfn_valid check validate modern RAM. */
         ret_t = hw_vdavinci_pin_page_range(vdavinci, ram_info);
         if (ret_t) {
             vascend_warn(vdavinci_to_dev(vdavinci),
@@ -832,36 +843,38 @@ STATIC void get_ram_range_by_gfn(struct vm_dom_info *vm_dom,
     }
 }
 
-void hw_vdavinci_unplug_ram(struct hw_vdavinci *vdavinci,
-                            unsigned long start_gfn, unsigned long size)
+/* Caller holds cache_lock, whose lifetime covers every VFIO callback. */
+void hw_vdavinci_unplug_ram(struct hw_vdavinci *vdavinci, u64 iova, u64 size)
 {
-    struct ram_range_info *ram_info = NULL;
-    struct dev_dom_info *dev_dom = NULL;
-    struct vm_dom_info *vm_dom = (struct vm_dom_info *)vdavinci->vdev.domain;
+    struct ram_range_info *ram_info, *next;
+    struct dev_dom_info *dev_dom;
+    struct vm_dom_info *vm_dom = vdavinci->vdev.domain;
 
-    down_write(&vm_dom->sem);
-    get_ram_range_by_gfn(vm_dom, start_gfn, size, &ram_info);
-    if (!ram_info) {
-        vascend_warn(vdavinci_to_dev(vdavinci),
-                     "ram range has already been unpluged, size %lu\n", size);
-        up_write(&vm_dom->sem);
+    if (!vm_dom || !size) {
         return;
     }
 
+    down_write(&vm_dom->sem);
     dev_dom = dev_dom_info_find(vm_dom, vdavinci);
-    /* first unmap */
-    if (dev_dom != NULL) {
-        dev_dom->ops.dev_dma_unmap_ram_range(vdavinci, ram_info);
+    list_for_each_entry_safe(ram_info, next, &vm_dom->ram_info_list->head, list) {
+        if (!vdavinci_ram_overlaps_iova(ram_info->base_gfn, ram_info->npages,
+                                       iova, size)) {
+            continue;
+        }
+        /* Retire each intersecting cached slot, including a full IOAS unmap.
+         * DMA mappings must be removed before their VFIO pins are released.
+         * Partial invalidation also retires the rest of that cached slot.
+         */
+        if (dev_dom != NULL) {
+            dev_dom->ops.dev_dma_unmap_ram_range(vdavinci, ram_info);
+        }
+        if (atomic_read(&ram_info->map_count) == 0) {
+            hw_vdavinci_unpin_page_range(vdavinci, ram_info);
+            list_del(&ram_info->list);
+            kfree(ram_info);
+        }
     }
-    if (atomic_read(&ram_info->map_count) == 0) {
-        hw_vdavinci_unpin_page_range(vdavinci, ram_info);
-        list_del(&(ram_info->list));
-        kfree(ram_info);
-    }
-
     up_write(&vm_dom->sem);
-    vascend_info(vdavinci_to_dev(vdavinci), "unplug ram success");
-    return;
 }
 
 void hw_vdavinci_put_iova(struct sg_table *dma_sgt)

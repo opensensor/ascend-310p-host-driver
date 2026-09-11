@@ -1130,6 +1130,7 @@ module_init(dvt_init);
 module_exit(dvt_exit);
 
 MODULE_LICENSE("GPL v2");
+MODULE_DESCRIPTION("Ascend mediated vNPU host virtualization driver");
 MODULE_INFO(supported, "Huawei Ascend Virtualization");
 MODULE_VERSION("v0.1");
 MODULE_AUTHOR("Huawei Corperation");

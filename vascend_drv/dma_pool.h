@@ -39,11 +39,12 @@ struct vdavinci_iova_info {
     struct dev_dma_sgt **sgt_array;
 };
 
-void hw_vdavinci_unpin_pages(struct hw_vdavinci *vdavinci);
+/* Caller holds vdev.cache_lock. */
+void hw_vdavinci_unpin_pages(struct hw_vdavinci *vdavinci, struct vm_dom_info *vm_dom);
 void hw_vdavinci_dma_pool_uninit(struct hw_vdavinci *vdavinci);
 int hw_vdavinci_dma_pool_init(struct hw_vdavinci *vdavinci);
 void hw_vdavinci_unplug_ram(struct hw_vdavinci *vdavinci,
-                            unsigned long start_gfn, unsigned long size);
+                            u64 iova, u64 size);
 void hw_vdavinci_put_iova(struct sg_table *dma_sgt);
 int hw_vdavinci_get_iova(struct hw_vdavinci *vdavinci,
                          unsigned long gfn, unsigned long size,

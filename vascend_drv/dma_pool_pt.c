@@ -27,11 +27,15 @@ void hw_vdavinci_iommu_detach_group(struct hw_vdavinci *vdavinci)
     struct iommu_group *group;
     struct device *dev = vdavinci_resource_dev(vdavinci);
 
+    if (!vf->domain) {
+        return;
+    }
     group = iommu_group_get(dev);
     if (!group) {
         return;
     }
     iommu_detach_group(vf->domain, group);
+    iommu_group_put(group);
     iommu_domain_free(vf->domain);
     vf->domain = NULL;
     put_iova_domain(&vf->iovad);
@@ -93,11 +97,21 @@ int hw_vdavinci_iommu_attach_group(struct hw_vdavinci *vdavinci)
         return -EEXIST;
     }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 0, 0)
+    vf->domain = iommu_paging_domain_alloc(dev);
+    if (IS_ERR(vf->domain)) {
+        ret = PTR_ERR(vf->domain);
+        vf->domain = NULL;
+        vascend_err(dev, "Failed to allocate iommu domain: %d\n", ret);
+        return ret;
+    }
+#else
     vf->domain = iommu_domain_alloc(&pci_bus_type);
     if (!vf->domain) {
         vascend_err(dev, "Failed to allocate iommu domain.");
         return -EIO;
     }
+#endif
 
     group = iommu_group_get(dev);
     if (!group) {
@@ -109,7 +123,7 @@ int hw_vdavinci_iommu_attach_group(struct hw_vdavinci *vdavinci)
     ret = iommu_attach_group(vf->domain, group);
     if (ret) {
         vascend_err(dev, "Failed to attach group.");
-        goto out_domain;
+        goto out_put_group;
     }
 
     resv_msi = vfio_iommu_has_sw_msi(group, &resv_msi_base);
@@ -124,10 +138,13 @@ int hw_vdavinci_iommu_attach_group(struct hw_vdavinci *vdavinci)
     }
 
     init_vf_iovad(vdavinci);
+    iommu_group_put(group);
     return 0;
 
 out_group:
     iommu_detach_group(vf->domain, group);
+out_put_group:
+    iommu_group_put(group);
 out_domain:
     iommu_domain_free(vf->domain);
     vf->domain = NULL;

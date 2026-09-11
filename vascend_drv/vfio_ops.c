@@ -40,6 +40,7 @@
 #include "dma_pool.h"
 #include "kvmdt.h"
 #include "vfio_ops.h"
+#include "guest_memory.h"
 
 STATIC DEFINE_MUTEX(mdev_register_lock);
 
@@ -146,8 +147,8 @@ int vdavinci_pin_pages(struct hw_vdavinci *vdavinci, struct vdavinci_pin_info *p
     }
 #endif
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(6,0,0))
-    ret = vfio_pin_pages(vdavinci->vdev.vfio_device, pin_info->gfn << PAGE_SHIFT,
-                         pin_info->npage, IOMMU_READ | IOMMU_WRITE, pin_info->pages);
+    ret = vdavinci_pin_guest_pages(vdavinci->vdev.vfio_device, pin_info->gfn,
+                                   pin_info->npage, pin_info->pages);
 #elif (LINUX_VERSION_CODE >= KERNEL_VERSION(5,19,0))
     ret = vfio_pin_pages(vdavinci->vdev.vfio_device, gfns,
                          pin_info->npage, IOMMU_READ | IOMMU_WRITE, pfns);
@@ -292,21 +293,29 @@ STATIC int hw_vdavinci_vfio_open(struct vfio_device *vfio_dev)
     struct mdev_device *mdev = get_mdev_device(vfio_dev->dev);
     struct hw_vdavinci *vdavinci = vfio_dev_to_vnpu(vfio_dev);
     struct mutex *g_vm_domains_lock = get_vm_domains_lock();
+    int ret;
 
     if (vdavinci == NULL || vfio_dev->kvm == NULL) {
         return -EINVAL;
     }
     vdavinci->vdev.kvm = vfio_dev->kvm;
+    mutex_lock(&vdavinci->vdev.cache_lock);
     mutex_lock(g_vm_domains_lock);
-    vm_dom = vm_dom_info_get(vdavinci->vdev.kvm);
+    vm_dom = vm_dom_info_get(vdavinci->vdev.kvm, vfio_dev);
     mutex_unlock(g_vm_domains_lock);
-    if (vm_dom == NULL) {
-        vascend_err(vdavinci_to_dev(vdavinci), "vnpu init domain failed\n");
-        return -EINVAL;
-    }
     vdavinci->vdev.domain = vm_dom;
+    mutex_unlock(&vdavinci->vdev.cache_lock);
+    if (vm_dom == NULL) {
+        vdavinci->vdev.kvm = NULL;
+        return -ENOMEM;
+    }
 
-    return hw_vdavinci_open(mdev);
+    ret = hw_vdavinci_open(mdev);
+    if (ret) {
+        hw_vdavinci_release_vm_domain(vdavinci);
+        vdavinci->vdev.kvm = NULL;
+    }
+    return ret;
 }
 
 STATIC void hw_vdavinci_vfio_close(struct vfio_device *vfio_dev)
@@ -319,7 +328,6 @@ STATIC void hw_vdavinci_vfio_close(struct vfio_device *vfio_dev)
     }
     hw_vdavinci_release(mdev);
     vdavinci->vdev.kvm = NULL;
-    vdavinci->vdev.domain = NULL;
 }
 
 STATIC ssize_t hw_vdavinci_vfio_read(struct vfio_device *vfio_dev, char __user *buf,
@@ -357,14 +365,13 @@ STATIC long hw_vdavinci_vfio_ioctl(struct vfio_device *vfio_dev,
 STATIC void hw_vdavinci_vfio_dma_unmap(struct vfio_device *vfio_dev,
                                        u64 iova, u64 length)
 {
-    unsigned long start_gfn = iova >> PAGE_SHIFT;
     struct hw_vdavinci *vdavinci = vfio_dev_to_vnpu(vfio_dev);
 
     if (vdavinci == NULL) {
         return;
     }
     mutex_lock(&vdavinci->vdev.cache_lock);
-    hw_vdavinci_unplug_ram(vdavinci, start_gfn, length);
+    hw_vdavinci_unplug_ram(vdavinci, iova, length);
     mutex_unlock(&vdavinci->vdev.cache_lock);
 }
 
@@ -816,15 +823,13 @@ STATIC int hw_vdavinci_iommu_notifier(struct notifier_block *nb,
             struct hw_vdavinci, vdev.iommu_notifier);
 
     if (action == VFIO_IOMMU_NOTIFY_DMA_UNMAP) {
-        unsigned long start_gfn;
         struct vfio_iommu_type1_dma_unmap *unmap = data;
 
         if (unmap == NULL) {
             return NOTIFY_BAD;
         }
-        start_gfn = unmap->iova >> PAGE_SHIFT;
         mutex_lock(&vdavinci->vdev.cache_lock);
-        hw_vdavinci_unplug_ram(vdavinci, start_gfn, unmap->size);
+        hw_vdavinci_unplug_ram(vdavinci, unmap->iova, unmap->size);
         mutex_unlock(&vdavinci->vdev.cache_lock);
     }
 
@@ -845,14 +850,16 @@ STATIC int hw_vdavinci_group_notifier(struct notifier_block *nb,
         if (data == NULL) {
             schedule_work(&vdavinci->vdev.release_work);
         } else {
+            mutex_lock(&vdavinci->vdev.cache_lock);
             mutex_lock(g_vm_domains_lock);
-            vm_dom = vm_dom_info_get(vdavinci->vdev.kvm);
+            vm_dom = vm_dom_info_get(vdavinci->vdev.kvm, NULL);
             mutex_unlock(g_vm_domains_lock);
             if (!vm_dom) {
                 vascend_err(vdavinci_to_dev(vdavinci), "vnpu init domain failed.\n");
             }
 
             vdavinci->vdev.domain = vm_dom;
+            mutex_unlock(&vdavinci->vdev.cache_lock);
         }
     }
 
