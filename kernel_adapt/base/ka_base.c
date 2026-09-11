@@ -19,11 +19,12 @@
 #include "ka_memory_pub.h"
 #include "ka_base_pub.h"
 #include "ka_base.h"
+#include "ka_crc16_table.h"
 
 
 unsigned short const *ka_base_get_crc16_table(void)
 {
-    return crc16_table;
+    return KA_CRC16_TABLE;
 }
 EXPORT_SYMBOL_GPL(ka_base_get_crc16_table);
 

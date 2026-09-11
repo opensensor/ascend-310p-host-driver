@@ -51,6 +51,7 @@
 
 #include "ka_macro_pub.h"
 #include "ka_common_pub.h"
+#include "ka_pfn_lookup.h"
 #include "ka_base_pub.h"
 
 #define __KA_GFP_DMA                   __GFP_DMA
@@ -293,7 +294,7 @@ typedef struct ka_sysinfo {
 
 #define ka_mm_lock_page(page)       lock_page(page)
 #define ka_mm_unlock_page(page)     unlock_page(page)
-#define ka_mm_follow_pfn(ka_vma, address, pfn)  follow_pfn(ka_vma, address, pfn)
+
 
 #define ka_mm_vmalloc_to_page(vmalloc_addr)   vmalloc_to_page(vmalloc_addr)
 #define ka_mm_vmalloc_to_pfn(vmalloc_addr)    vmalloc_to_pfn(vmalloc_addr)

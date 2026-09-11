@@ -108,6 +108,7 @@ KA_MODULE_DEVICE_TABLE(pci, g_ts_agent_tbl);
 ka_module_init(ts_agent_init);
 ka_module_exit(ts_agent_exit);
 
+MODULE_DESCRIPTION("Ascend task scheduler agent");
 KA_MODULE_LICENSE("GPL v2");
 KA_MODULE_INFO(supported, "ts agent");
 KA_MODULE_VERSION("v0.1");

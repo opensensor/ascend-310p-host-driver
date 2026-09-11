@@ -1,13 +1,13 @@
 ifeq ($(TARGET_BUILD_TYPE),debug)
-	EXTRA_CFLAGS += -DCFG_BUILD_DEBUG
+	ccflags-y += -DCFG_BUILD_DEBUG
 endif
 
 ifeq ($(ENABLE_ASAN),true)
-    EXTRA_CFLAGS += -DCFG_ENABLE_ASAN
+    ccflags-y += -DCFG_ENABLE_ASAN
 endif
 
 ifneq ($(NOT_SUPPORT_SP), y)
-	EXTRA_CFLAGS += -fstack-protector-all
+	ccflags-y += -fstack-protector-all
 endif
 
 ccflags-y += -Wall -Werror -Wno-missing-prototypes -Wno-missing-declarations
@@ -15,54 +15,54 @@ ccflags-y += -Wall -Werror -Wno-missing-prototypes -Wno-missing-declarations
 ifeq ($(TOP_DIR),)
 
 	ifeq ($(DAVINCI_HIAI_DKMS),y)
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dev_inc_open/inc
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dev_inc/inc
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dev_inc/inc/dbl
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/inc/driver
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/libc_sec/include
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/svmdrv/
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/svmdrv/common
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/svmdrv/master/
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/svmdrv/pmaster/
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/svmdrv/pmaster/comm
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/svmdrv/pmaster/comm/inc
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/svmdrv/pmaster/common
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/svmdrv/pmaster/common/inc
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/svmdrv/pmaster/msg
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/svmdrv/pmaster/pm_adapt
+		ccflags-y += -I$(HIAI_DKMS_DIR)/dev_inc_open/inc
+		ccflags-y += -I$(HIAI_DKMS_DIR)/dev_inc/inc
+		ccflags-y += -I$(HIAI_DKMS_DIR)/dev_inc/inc/dbl
+		ccflags-y += -I$(HIAI_DKMS_DIR)/inc/driver
+		ccflags-y += -I$(HIAI_DKMS_DIR)/libc_sec/include
+		ccflags-y += -I$(HIAI_DKMS_DIR)/svmdrv/
+		ccflags-y += -I$(HIAI_DKMS_DIR)/svmdrv/common
+		ccflags-y += -I$(HIAI_DKMS_DIR)/svmdrv/master/
+		ccflags-y += -I$(HIAI_DKMS_DIR)/svmdrv/pmaster/
+		ccflags-y += -I$(HIAI_DKMS_DIR)/svmdrv/pmaster/comm
+		ccflags-y += -I$(HIAI_DKMS_DIR)/svmdrv/pmaster/comm/inc
+		ccflags-y += -I$(HIAI_DKMS_DIR)/svmdrv/pmaster/common
+		ccflags-y += -I$(HIAI_DKMS_DIR)/svmdrv/pmaster/common/inc
+		ccflags-y += -I$(HIAI_DKMS_DIR)/svmdrv/pmaster/msg
+		ccflags-y += -I$(HIAI_DKMS_DIR)/svmdrv/pmaster/pm_adapt
 
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dms/include
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/kernel_adapt/include
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dbl/kernel_adapt/memory
+		ccflags-y += -I$(HIAI_DKMS_DIR)/dms/include
+		ccflags-y += -I$(HIAI_DKMS_DIR)/kernel_adapt/include
+		ccflags-y += -I$(HIAI_DKMS_DIR)/dbl/kernel_adapt/memory
 
-		EXTRA_CFLAGS += -DDRV_HOST
-		EXTRA_CFLAGS += -DCFG_FEATURE_SHARE_LOG
+		ccflags-y += -DDRV_HOST
+		ccflags-y += -DCFG_FEATURE_SHARE_LOG
         ifneq ($(filter $(TARGET_CHIP_ID), hi1910b hi1980 hi1980b),)
-            EXTRA_CFLAGS += -DCFG_FEATURE_HOST_LOG
-            EXTRA_CFLAGS += -DCFG_FEATURE_KA_ALLOC_INTERFACE
+            ccflags-y += -DCFG_FEATURE_HOST_LOG
+            ccflags-y += -DCFG_FEATURE_KA_ALLOC_INTERFACE
         endif
 		# ascend910
 		ifeq ($(TARGET_PRODUCT),cloud)
-			EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_CLOUD_HOST
-			EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_CLOUD
+			ccflags-y += -DCFG_SOC_PLATFORM_CLOUD_HOST
+			ccflags-y += -DCFG_SOC_PLATFORM_CLOUD
 			ifeq ($(TARGET_CHIP_ID), hi1980)
-				EXTRA_CFLAGS += -DCFG_FEATURE_VFIO
-				EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/svmdrv/vmaster
+				ccflags-y += -DCFG_FEATURE_VFIO
+				ccflags-y += -I$(HIAI_DKMS_DIR)/svmdrv/vmaster
 				drv_devmm_host-objs += pm_adapt/devmm_pm_adapt.o pm_adapt/devmm_pm_vpc.o pm_adapt/svm_pm_version_adapt.o
 			endif
 			ifeq ($(TARGET_CHIP_ID), hi1980b)
-                EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_CLOUD_V2
+                ccflags-y += -DCFG_SOC_PLATFORM_CLOUD_V2
                 drv_devmm_host-objs += svm_shmem_node_pod.o
 			endif
 		# ascend310 + ascend310p + ascend310b
 		else ifeq ($(TARGET_PRODUCT),mini)
 			# ascend310p
 			ifeq ($(TARGET_CHIP_ID), $(ASCEND_FLORENCE_DC_V10))
-				EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_MINIV2
-				EXTRA_CFLAGS += -DCFG_FEATURE_VFIO
-				EXTRA_CFLAGS += -DCFG_FEATURE_HOST_LOG
-				EXTRA_CFLAGS += -DCFG_FEATURE_KA_ALLOC_INTERFACE
-				EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/svmdrv/vmaster
+				ccflags-y += -DCFG_SOC_PLATFORM_MINIV2
+				ccflags-y += -DCFG_FEATURE_VFIO
+				ccflags-y += -DCFG_FEATURE_HOST_LOG
+				ccflags-y += -DCFG_FEATURE_KA_ALLOC_INTERFACE
+				ccflags-y += -I$(HIAI_DKMS_DIR)/svmdrv/vmaster
 				drv_devmm_host-objs += pm_adapt/devmm_pm_adapt.o pm_adapt/devmm_pm_vpc.o pm_adapt/svm_pm_version_adapt.o
 			endif
 		endif
@@ -90,54 +90,54 @@ else
 	else
 		ccflags-y += -Wtrampolines $(WDATE_TIME) -Wfloat-equal -Wvla -Wundef -funsigned-char -Wformat=2 -Wstack-usage=2048 -Wcast-align -Wextra
 		ccflags-y += -Wno-unused-parameter -Wno-missing-field-initializers -Wno-sign-compare -Wno-format-nonliteral
-                EXTRA_CFLAGS += -I$(TOP_DIR)/inc/driver
-		EXTRA_CFLAGS += -I$(TOP_DIR)/abl/libc_sec/include
-		EXTRA_CFLAGS += -I$(DRIVER_OPEN_KERNEL_DIR)/inc
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/inc
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/inc/dbl
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/master
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/common
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/common/inc
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/master/comm
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/master/comm/inc
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/master/pmaster
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/master/pmaster/svm_common
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/master/pmaster/master_comm
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/master/pmaster/msg
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/master/pmaster/pm_adapt
+                ccflags-y += -I$(TOP_DIR)/inc/driver
+		ccflags-y += -I$(TOP_DIR)/abl/libc_sec/include
+		ccflags-y += -I$(DRIVER_OPEN_KERNEL_DIR)/inc
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/inc
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/inc/dbl
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/master
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/common
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/common/inc
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/master/comm
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/master/comm/inc
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/master/pmaster
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/master/pmaster/svm_common
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/master/pmaster/master_comm
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/master/pmaster/msg
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/master/pmaster/pm_adapt
 	
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/dms/include
-		EXTRA_CFLAGS += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_open/src/kernel_adapt/include
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/dbl/kernel_adapt/memory
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/dms/include
+		ccflags-y += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_open/src/kernel_adapt/include
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/dbl/kernel_adapt/memory
 
-		EXTRA_CFLAGS += -DDRV_HOST
-		EXTRA_CFLAGS += -DCFG_FEATURE_SHARE_LOG
+		ccflags-y += -DDRV_HOST
+		ccflags-y += -DCFG_FEATURE_SHARE_LOG
 		ifneq ($(filter $(PRODUCT), ascend310B ascend310p ascend910 ascend910B),)
-            EXTRA_CFLAGS += -DCFG_FEATURE_HOST_LOG
-            EXTRA_CFLAGS += -DCFG_FEATURE_KA_ALLOC_INTERFACE
+            ccflags-y += -DCFG_FEATURE_HOST_LOG
+            ccflags-y += -DCFG_FEATURE_KA_ALLOC_INTERFACE
         endif
 		ifneq ($(filter $(PRODUCT),  ascend910 ascend910B),)
-			EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_CLOUD_HOST
-			EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_CLOUD
+			ccflags-y += -DCFG_SOC_PLATFORM_CLOUD_HOST
+			ccflags-y += -DCFG_SOC_PLATFORM_CLOUD
 			ifeq ($(PRODUCT),ascend910)
-				EXTRA_CFLAGS += -DCFG_FEATURE_VFIO
-				EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/master/vmaster
+				ccflags-y += -DCFG_FEATURE_VFIO
+				ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/master/vmaster
 
 				drv_devmm_host-objs += pm_adapt/devmm_pm_adapt.o pm_adapt/devmm_pm_vpc.o pm_adapt/svm_pm_version_adapt.o
 			endif
 			ifeq ($(PRODUCT),ascend910B)
 				ifeq ($(ADAPT_KP_OS_FOR_EMU_TEST),ON)
-					EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_ESL_FPGA
-					EXTRA_CFLAGS += -DADAPT_KP_OS_FOR_EMU_TEST
+					ccflags-y += -DCFG_SOC_PLATFORM_ESL_FPGA
+					ccflags-y += -DADAPT_KP_OS_FOR_EMU_TEST
 				endif
 				drv_devmm_host-objs += svm_shmem_node_pod.o
-				EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_CLOUD_V2               #temporary
+				ccflags-y += -DCFG_SOC_PLATFORM_CLOUD_V2               #temporary
 			endif
 		else ifneq ($(filter $(PRODUCT),  ascend310p ascend310B ascend310Besl ascend310Bemu),)
 			ifeq  ($(PRODUCT),ascend310p)
-				EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_MINIV2
-				EXTRA_CFLAGS += -DCFG_FEATURE_VFIO
-				EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/master/vmaster
+				ccflags-y += -DCFG_SOC_PLATFORM_MINIV2
+				ccflags-y += -DCFG_FEATURE_VFIO
+				ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/svmdrv/master/vmaster
 
 				drv_devmm_host-objs += pm_adapt/devmm_pm_adapt.o pm_adapt/devmm_pm_vpc.o pm_adapt/svm_pm_version_adapt.o
 			endif

@@ -163,4 +163,5 @@ int hw_dvt_uninit(void *vdavinci_priv)
 }
 EXPORT_SYMBOL_GPL(hw_dvt_uninit);
 
+MODULE_DESCRIPTION("Ascend virtualization interface stub");
 KA_MODULE_LICENSE("GPL");

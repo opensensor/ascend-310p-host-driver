@@ -23,6 +23,8 @@
 #include "ka_task_pub.h"
 #include "ka_fs_pub.h"
 #include "ka_pci_pub.h"
+#include <linux/sched/mm.h>
+
 #include "ka_base_pub.h"
 #include "ka_memory_pub.h"
 #include "ka_system_pub.h"
@@ -1137,7 +1139,11 @@ STATIC int drv_ascend_intf_open(struct inode *inode, ka_file_t *file)
     file_private_data->close_flag = DAVINIC_NOT_INIT_BY_OPENCMD;
     file_private_data->release_status = FALSE;
     ka_base_atomic_set(&file_private_data->work_count, 0);
-    file_private_data->priv_filep = *file;
+    /* Initialize the vendor's private dispatch snapshot; it is never fput().
+     * A struct assignment is unavailable once VFS makes f_path const.
+     * The original file continues to own the borrowed VFS references.
+     */
+    memcpy(&file_private_data->priv_filep, file, sizeof(file_private_data->priv_filep));
     ret = strcpy_s(file_private_data->module_name, DAVINIC_MODULE_NAME_MAX,
         DAVINIC_UNINIT_FILE);
     if (ret != 0) {
@@ -1525,7 +1531,13 @@ STATIC unsigned long drv_ascend_intf_get_unmapped_area(ka_file_t *filep,
         return -EINVAL;
     }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 19, 0)
+    return mm_get_unmapped_area(filep, addr, len, pgoff, flags);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(6, 10, 0)
+    return mm_get_unmapped_area(current->mm, filep, addr, len, pgoff, flags);
+#else
     return current->mm->get_unmapped_area(filep, addr, len, pgoff, flags);
+#endif
 }
 
 STATIC unsigned int drv_ascend_intf_poll(
@@ -2093,6 +2105,7 @@ STATIC void __exit drv_davinci_intf_exit(void)
 ka_module_init(drv_ascend_intf_init);
 ka_module_exit(drv_davinci_intf_exit);
 
+MODULE_DESCRIPTION("Ascend host device interface");
 KA_MODULE_LICENSE("GPL");
 
 #else

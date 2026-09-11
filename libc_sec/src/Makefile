@@ -155,7 +155,7 @@ lib: note_msg $(OBJECTS)
 	@mkdir -p ../obj
 	$(CC) -c $< $(CFLAG) -o ../obj/$(patsubst %.c,%.o,$<)
 
-EXTRA_CFLAGS += -I$(INCDIR) -fstack-protector $(CFLAG_EXT)
+ccflags-y += -I$(INCDIR) -fstack-protector $(CFLAG_EXT)
 
 # provide the default value to module name and ccflags-y
 ifeq ($(MODULE),)

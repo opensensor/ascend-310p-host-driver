@@ -137,7 +137,13 @@ EXPORT_SYMBOL_GPL(ka_task_get_current_mm);
 unsigned long ka_task_get_current_get_unmapped_area(ka_file_t *filep,
         unsigned long addr, unsigned long len, unsigned long pgoff, unsigned long flags)
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 19, 0)
+    return mm_get_unmapped_area(filep, addr, len, pgoff, flags);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(6, 10, 0)
+    return mm_get_unmapped_area(current->mm, filep, addr, len, pgoff, flags);
+#else
     return current->mm->get_unmapped_area(filep, addr, len, pgoff, flags);
+#endif
 }
 EXPORT_SYMBOL_GPL(ka_task_get_current_get_unmapped_area);
 

@@ -101,10 +101,18 @@ static ka_pte_t *devmm_pte_offset_map(ka_pmd_t *pmd, unsigned long addr, ka_pmd_
     if (pmdvalp) {
         *pmdvalp = pmdval;
     }
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 0, 0)
+    if (ka_unlikely(pmd_none(pmdval) || pmd_is_migration_entry(pmdval))) {
+#else
     if (ka_unlikely(pmd_none(pmdval) || is_pmd_migration_entry(pmdval))) {
+#endif
         goto nomap;
     }
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(7, 0, 0)
+    if (ka_unlikely(pmd_leaf(pmdval))) {
+#else
     if (ka_unlikely(pmd_trans_huge(pmdval) || pmd_devmap(pmdval))) {
+#endif
         goto nomap;
     }
     if (ka_unlikely(pmd_bad(pmdval))) {

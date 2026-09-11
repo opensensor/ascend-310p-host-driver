@@ -142,7 +142,7 @@ static inline ka_inode_t *ka_fs_get_file_f_inode(ka_file_t *file)
 {
     return file->f_inode;
 }
-static inline ka_path_t *ka_fs_get_file_f_path(ka_file_t *file)
+static inline const ka_path_t *ka_fs_get_file_f_path(ka_file_t *file)
 {
     return &file->f_path;
 }

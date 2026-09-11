@@ -1,4 +1,12 @@
+# The Linux 7 KVM APIs used by drv_vascend are private to KVM modules.
+# Build the physical-device stack by default. Opt in for older supported kernels.
+BUILD_VASCEND ?= n
+TARGET_PRODUCT ?= mini
+Driver_Install_Mode ?= normal
+export BUILD_VASCEND TARGET_PRODUCT Driver_Install_Mode
+
 ifneq ($(KERNELRELEASE),)
+	subdir-ccflags-y += -include $(HIAI_DKMS_DIR)/compat/ascend_linux_compat.h
 	# start
 	ifeq ($(Driver_Install_Mode),vnpu_guest)
 		obj-m := svmdrv/vmaster/
@@ -35,7 +43,9 @@ ifneq ($(KERNELRELEASE),)
 		obj-m += vmng_host/
 		obj-m += vascend_drv_stub/
 		obj-m += ts_agent/
-		obj-m += vascend_drv/
+		ifeq ($(BUILD_VASCEND),y)
+			obj-m += vascend_drv/
+		endif
 		obj-m += dbl/comm_algorithm/
 		obj-m += dbl/dev_identity/
 		obj-m += dbl/runenv_config/
@@ -59,15 +69,8 @@ else
 	HIAI_DKMS_DIR := $(shell pwd)
 	NOT_SUPPORT_SP := n
 
-	CONFIG_SP := $(shell bash -c ' \
-	for item in $$(ls /lib/modules/ 2>/dev/null); do \
-        if [[ -d /lib/modules/$${item} ]] && \
-                ls /boot/ 2>/dev/null | grep -q "$${item}"; then \
-        KERNEL_VERSION=$${item}; \
-        cat /boot/config-$${KERNEL_VERSION} | grep -e "CONFIG_STACKPROTECTOR.*=y" -e "CONFIG_CC_STACKPROTECTOR.*=y" | grep -v NONE; \
-                break; \
-        fi \
-	done')
+	# Check the selected build kernel, not an arbitrary installed kernel.
+	CONFIG_SP := $(shell sed -n '/^CONFIG_STACKPROTECTOR=y/p' /lib/modules/$(KERNEL_UNAME)/build/.config)
 	ifeq ($(CONFIG_SP), )
     	NOT_SUPPORT_SP = y
 	endif
@@ -89,8 +92,17 @@ endif
 # Adaptive kernel
 DKMS_EXTRA_CFLAGS := "-isystem $(shell $(CC) -print-file-name=include)"
 
-all:
-	$(MAKE) --jobs=$(DKMS_JOBS) -C /lib/modules/$(KERNEL_UNAME)/build M=$(PWD) KBUILD_MODPOST_WARN=1 CFLAGS_MODULE=${DKMS_EXTRA_CFLAGS} modules
+.PHONY: all clean check-config
+all: check-config
+	$(MAKE) --jobs=$(DKMS_JOBS) -C /lib/modules/$(KERNEL_UNAME)/build M=$(PWD) KBUILD_MODPOST_WARN= CFLAGS_MODULE=${DKMS_EXTRA_CFLAGS} modules
+check-config:
+	@case "$(BUILD_VASCEND)" in y|n) ;; *) echo "BUILD_VASCEND must be y or n" >&2; exit 1;; esac
+	@if [ "$(BUILD_VASCEND)" = y ] && \
+	    awk '$$2 == "kvm_read_guest" && $$5 ~ /^module:/ { found=1 } END { exit !found }' \
+	    /lib/modules/$(KERNEL_UNAME)/build/Module.symvers; then \
+	    echo "drv_vascend requires KVM APIs restricted to KVM modules by this kernel; use BUILD_VASCEND=n for bare metal." >&2; \
+	    exit 1; \
+	fi
 clean:
 	$(MAKE) --jobs=$(DKMS_JOBS) -C /lib/modules/$(KERNEL_UNAME)/build M=$(PWD) clean
 

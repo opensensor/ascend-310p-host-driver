@@ -1,10 +1,10 @@
 ccflags-y += -Wno-missing-prototypes -Wno-missing-declarations
 ifeq ($(TARGET_BUILD_TYPE),debug)
-	EXTRA_CFLAGS += -DCFG_BUILD_DEBUG
+	ccflags-y += -DCFG_BUILD_DEBUG
 endif
 
 ifneq ($(NOT_SUPPORT_SP), y)
-    EXTRA_CFLAGS += -fstack-protector-all
+    ccflags-y += -fstack-protector-all
 endif
 
 ccflags-y += -Wall -Werror
@@ -15,131 +15,131 @@ CUR_MAKEFILE_PATH := $(strip \
                      $(patsubst %/,%, $(dir $(LOCAL_MODULE_MAKEFILE))) \
                      )
 TOPDIR_ABS := $(realpath $(CUR_MAKEFILE_PATH)/../../../)
-EXTRA_CFLAGS += -DCFG_MANAGER_HOST_ENV
-EXTRA_CFLAGS += -DCFG_FEATURE_SHARE_LOG
-EXTRA_CFLAGS += -DCFG_FEATURE_IPC_NOTIFY
-EXTRA_CFLAGS += -DCFG_FEATURE_HOTRESET
-EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host
-EXTRA_CFLAGS += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_open/src/kernel_adapt/include
+ccflags-y += -DCFG_MANAGER_HOST_ENV
+ccflags-y += -DCFG_FEATURE_SHARE_LOG
+ccflags-y += -DCFG_FEATURE_IPC_NOTIFY
+ccflags-y += -DCFG_FEATURE_HOTRESET
+ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host
+ccflags-y += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_open/src/kernel_adapt/include
 ifeq ($(DAVINCI_HIAI_DKMS),y)
 
-	EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/npu_inc
-	EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dev_inc_open/inc
-	EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dev_inc/inc
-	EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dev_inc/inc/dbl
-	EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/inc/driver
-	EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/drv_devmng_inc
-	EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_host
-	EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_osal
-	EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_sqcq_dfx
-	EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dms/include
-	EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_hotreset
-	EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dms/smf/sensor
-	EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dms/smf/sensor/config
-	EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dms/config
-	EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dms/smf/event
-	EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/kernel_adapt/include
+	ccflags-y += -I$(HIAI_DKMS_DIR)/npu_inc
+	ccflags-y += -I$(HIAI_DKMS_DIR)/dev_inc_open/inc
+	ccflags-y += -I$(HIAI_DKMS_DIR)/dev_inc/inc
+	ccflags-y += -I$(HIAI_DKMS_DIR)/dev_inc/inc/dbl
+	ccflags-y += -I$(HIAI_DKMS_DIR)/inc/driver
+	ccflags-y += -I$(HIAI_DKMS_DIR)/drv_devmng_inc
+	ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_host
+	ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_osal
+	ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_sqcq_dfx
+	ccflags-y += -I$(HIAI_DKMS_DIR)/dms/include
+	ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_hotreset
+	ccflags-y += -I$(HIAI_DKMS_DIR)/dms/smf/sensor
+	ccflags-y += -I$(HIAI_DKMS_DIR)/dms/smf/sensor/config
+	ccflags-y += -I$(HIAI_DKMS_DIR)/dms/config
+	ccflags-y += -I$(HIAI_DKMS_DIR)/dms/smf/event
+	ccflags-y += -I$(HIAI_DKMS_DIR)/kernel_adapt/include
 	ifeq ($(TARGET_PRODUCT),mini)
 		ifeq ($(TARGET_CHIP_ID), $(ASCEND_FLORENCE_DC_V10))
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_common
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_common/devdrv_callback
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_dev
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_id
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_host/tsdrv_virt
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_nvme
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_nvme/shm
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_nvme/logic
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dms/drv_devmng/drv_devmng_host/ascend910
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/libc_sec/include
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_vm
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_host/tsdrv_conflict_check
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_common
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_common/devdrv_callback
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_dev
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_id
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_host/tsdrv_virt
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_nvme
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_nvme/shm
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_nvme/logic
+			ccflags-y += -I$(HIAI_DKMS_DIR)/dms/drv_devmng/drv_devmng_host/ascend910
+			ccflags-y += -I$(HIAI_DKMS_DIR)/libc_sec/include
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_vm
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_host/tsdrv_conflict_check
 		else
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_common/devdrv_callback
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/libc_sec/include
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_vm
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_host
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_host/ts_drv_common
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_host/ts_drv_common/tsdrv_dev/
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_host/ts_drv_common/tsdrv_id
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_host/tsdrv_virt
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_host/ts_drv_common/tsdrv_nvme
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_host/ts_drv_common/tsdrv_nvme/shm
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_host/ts_drv_common/tsdrv_nvme/logic
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_host/ts_drv_common/tsdrv_nvme/sync_cb
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_host/tsdrv_conflict_check
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dms/drv_devmng/drv_devmng_host
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dms/drv_devmng/drv_devmng_host/ascend310
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_common/devdrv_callback
+			ccflags-y += -I$(HIAI_DKMS_DIR)/libc_sec/include
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_vm
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_host
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_host/ts_drv_common
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_host/ts_drv_common/tsdrv_dev/
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_host/ts_drv_common/tsdrv_id
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_host/tsdrv_virt
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_host/ts_drv_common/tsdrv_nvme
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_host/ts_drv_common/tsdrv_nvme/shm
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_host/ts_drv_common/tsdrv_nvme/logic
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_host/ts_drv_common/tsdrv_nvme/sync_cb
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_host/tsdrv_conflict_check
+			ccflags-y += -I$(HIAI_DKMS_DIR)/dms/drv_devmng/drv_devmng_host
+			ccflags-y += -I$(HIAI_DKMS_DIR)/dms/drv_devmng/drv_devmng_host/ascend310
 		endif
 	else
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_common
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_common/devdrv_callback
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_dev
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_id
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_host/tsdrv_virt
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_nvme
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_nvme/shm
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_nvme/logic
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dms/drv_devmng/drv_devmng_host/ascend910
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/libc_sec/include
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_vm
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_host/tsdrv_conflict_check
+		ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_common
+		ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_common/devdrv_callback
+		ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_dev
+		ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_id
+		ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_host/tsdrv_virt
+		ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_nvme
+		ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_nvme/shm
+		ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_nvme/logic
+		ccflags-y += -I$(HIAI_DKMS_DIR)/dms/drv_devmng/drv_devmng_host/ascend910
+		ccflags-y += -I$(HIAI_DKMS_DIR)/libc_sec/include
+		ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_vm
+		ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_host/tsdrv_conflict_check
 	endif
 
 	ifeq ($(TARGET_PRODUCT),cloud)
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/inc/soc/cloud_v1
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_platform_host/ascend910
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_conflict_check/ascend910
-		EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_CLOUD
-		EXTRA_CFLAGS += -DCFG_FEATURE_USE_MAILBOX_RECYCLE
-		EXTRA_CFLAGS += -DCFG_FEATURE_HOST_LOG
-		EXTRA_CFLAGS += -DCFG_FEATURE_KA_ALLOC_INTERFACE
+		ccflags-y += -I$(HIAI_DKMS_DIR)/inc/soc/cloud_v1
+		ccflags-y += -I$(HIAI_DKMS_DIR)/ts_platform_host/ascend910
+		ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_conflict_check/ascend910
+		ccflags-y += -DCFG_SOC_PLATFORM_CLOUD
+		ccflags-y += -DCFG_FEATURE_USE_MAILBOX_RECYCLE
+		ccflags-y += -DCFG_FEATURE_HOST_LOG
+		ccflags-y += -DCFG_FEATURE_KA_ALLOC_INTERFACE
 
 		ifeq ($(TARGET_CHIP_ID), hi1980)
-			EXTRA_CFLAGS += -DCFG_FEATURE_RUNTIME_NO_THREAD
-			EXTRA_CFLAGS += -DCFG_FEATURE_VFIO
+			ccflags-y += -DCFG_FEATURE_RUNTIME_NO_THREAD
+			ccflags-y += -DCFG_FEATURE_VFIO
 		endif
 
 		ifeq ($(TARGET_CHIP_ID), hi1980b)
-			EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_CLOUD_V2
-			EXTRA_CFLAGS += -DCFG_FEATURE_CDQM
-			EXTRA_CFLAGS += -DCFG_FEATURE_CALLBACK_EVENT
-			EXTRA_CFLAGS += -DCFG_FEATURE_SQ_HOST_MEM
-			EXTRA_CFLAGS += -DCFG_FEATURE_CQ_HOST_MEM
-			EXTRA_CFLAGS += -DCFG_FEATURE_SUPPORT_VSQ_MNG
-			EXTRA_CFLAGS += -DCFG_FEATURE_RUNTIME_NO_THREAD
-			EXTRA_CFLAGS += -DCFG_FEATURE_STARS
-			EXTRA_CFLAGS += -DVER_CDQM_B607
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_cdqm
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_host/tsdrv_cdqm
+			ccflags-y += -DCFG_SOC_PLATFORM_CLOUD_V2
+			ccflags-y += -DCFG_FEATURE_CDQM
+			ccflags-y += -DCFG_FEATURE_CALLBACK_EVENT
+			ccflags-y += -DCFG_FEATURE_SQ_HOST_MEM
+			ccflags-y += -DCFG_FEATURE_CQ_HOST_MEM
+			ccflags-y += -DCFG_FEATURE_SUPPORT_VSQ_MNG
+			ccflags-y += -DCFG_FEATURE_RUNTIME_NO_THREAD
+			ccflags-y += -DCFG_FEATURE_STARS
+			ccflags-y += -DVER_CDQM_B607
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_cdqm
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_host/tsdrv_cdqm
 		endif
 
 	else ifeq ($(TARGET_PRODUCT),mini)
-		EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_MINI
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/inc/soc/mini_v1
+		ccflags-y += -DCFG_SOC_PLATFORM_MINI
+		ccflags-y += -I$(HIAI_DKMS_DIR)/inc/soc/mini_v1
 		ifeq ($(TARGET_CHIP_ID), $(ASCEND_FLORENCE_DC_V10))
-			EXTRA_CFLAGS += -DCFG_FEATURE_HOST_LOG
-			EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_MINIV2
-			EXTRA_CFLAGS += -DCFG_FEATURE_CQ_HOST_MEM
-			EXTRA_CFLAGS += -DCFG_FEATURE_IPC_NOTIFY_WITH_EVENTID
-			EXTRA_CFLAGS += -DCFG_FEATURE_RUNTIME_NO_THREAD
-			EXTRA_CFLAGS += -DCFG_FEATURE_ID_MAPING
-			EXTRA_CFLAGS += -DCFG_FEATURE_KA_ALLOC_INTERFACE
-			EXTRA_CFLAGS += -DCFG_FEATURE_SHARE_LOG_INNER
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_platform_host/ascend610
-			EXTRA_CFLAGS += -DCFG_FEATURE_VFIO
-			EXTRA_CFLAGS += -DCFG_FEATURE_USE_MAILBOX_RECYCLE
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_conflict_check/ascend610
+			ccflags-y += -DCFG_FEATURE_HOST_LOG
+			ccflags-y += -DCFG_SOC_PLATFORM_MINIV2
+			ccflags-y += -DCFG_FEATURE_CQ_HOST_MEM
+			ccflags-y += -DCFG_FEATURE_IPC_NOTIFY_WITH_EVENTID
+			ccflags-y += -DCFG_FEATURE_RUNTIME_NO_THREAD
+			ccflags-y += -DCFG_FEATURE_ID_MAPING
+			ccflags-y += -DCFG_FEATURE_KA_ALLOC_INTERFACE
+			ccflags-y += -DCFG_FEATURE_SHARE_LOG_INNER
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_platform_host/ascend610
+			ccflags-y += -DCFG_FEATURE_VFIO
+			ccflags-y += -DCFG_FEATURE_USE_MAILBOX_RECYCLE
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_conflict_check/ascend610
 		else
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_platform_host/ascend310
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_host/ts_drv_common/tsdrv_conflict_check/ascend310
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_platform_host/ascend310
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_host/ts_drv_common/tsdrv_conflict_check/ascend310
 		endif
 	else
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/inc/soc/mini_v1
+		ccflags-y += -I$(HIAI_DKMS_DIR)/inc/soc/mini_v1
 		ifeq ($(TARGET_CHIP_ID), $(ASCEND_FLORENCE_DC_V10))
-			EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_MINIV2
-			EXTRA_CFLAGS += -DCFG_FEATURE_RUNTIME_NO_THREAD
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_platform_host/ascend610
-			EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_conflict_check/ascend610
+			ccflags-y += -DCFG_SOC_PLATFORM_MINIV2
+			ccflags-y += -DCFG_FEATURE_RUNTIME_NO_THREAD
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_platform_host/ascend610
+			ccflags-y += -I$(HIAI_DKMS_DIR)/ts_drv_common/tsdrv_conflict_check/ascend610
 		endif
 	endif
 
@@ -237,19 +237,19 @@ ifeq ($(DAVINCI_HIAI_DKMS),y)
 		endif
 	endif
 else
-EXTRA_CFLAGS += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_open/src/kernel_adapt/include
+ccflags-y += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_open/src/kernel_adapt/include
 endif
 
 else   #########end module.mk
 ccflags-y += $(WDATE_TIME) -Wfloat-equal -Wvla -Wundef -funsigned-char  -Wformat=2 -Wstack-usage=2048 -Wcast-align
 ccflags-y += -Wextra -Wno-unused-parameter -Wno-sign-compare -Wno-missing-field-initializers -Wno-format-nonliteral -Wno-empty-body
 
-EXTRA_CFLAGS += -DCFG_MANAGER_HOST_ENV
-EXTRA_CFLAGS += -DCFG_FEATURE_SHARE_LOG
-EXTRA_CFLAGS += -DCFG_FEATURE_IPC_NOTIFY
-EXTRA_CFLAGS += -DCFG_FEATURE_HOTRESET
-EXTRA_CFLAGS += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_open/src/kernel_adapt/include
-EXTRA_CFLAGS += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_space/src/rms/trs_drv/inc
+ccflags-y += -DCFG_MANAGER_HOST_ENV
+ccflags-y += -DCFG_FEATURE_SHARE_LOG
+ccflags-y += -DCFG_FEATURE_IPC_NOTIFY
+ccflags-y += -DCFG_FEATURE_HOTRESET
+ccflags-y += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_open/src/kernel_adapt/include
+ccflags-y += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_space/src/rms/trs_drv/inc
 ifeq ($(DAVINCI_HIAI_DKMS),y)
 
 else
@@ -260,130 +260,130 @@ else
 		endif
 	endif
 
-	EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_sqcq_dfx
-	EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_osal
-	EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/dms/include
-	EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_hotreset
-	EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/dms/smf/sensor
-	EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/dms/smf/sensor/config
-	EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/dms/config
-	EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/dms/smf/event
-	EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/inc/dbl
-	EXTRA_CFLAGS += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_open/src/kernel_adapt/include
+	ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_sqcq_dfx
+	ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_osal
+	ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/dms/include
+	ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_hotreset
+	ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/dms/smf/sensor
+	ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/dms/smf/sensor/config
+	ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/dms/config
+	ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/dms/smf/event
+	ccflags-y += -I$(DRIVER_KERNEL_DIR)/inc/dbl
+	ccflags-y += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_open/src/kernel_adapt/include
 	ifeq ($(filter $(PRODUCT),  ascend310 ascend310rc),)
-		EXTRA_CFLAGS += -I$(TOP_DIR)/abl/bbox/inc/bbox
-		EXTRA_CFLAGS += -I$(TOP_DIR)/inc/driver
-		EXTRA_CFLAGS += -I$(DRIVER_OPEN_KERNEL_DIR)/inc
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/inc
-		EXTRA_CFLAGS += -I$(TOP_DIR)/abl/libc_sec/include
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/tsdrv_virt
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/devdrv_callback
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_dev
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_id
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_nvme
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_nvme/logic
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_nvme/shm
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/drv_devmng/drv_devmng_inc/
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_vm
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/drv_devmng/drv_devmng_host/ascend910
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/tsdrv_conflict_check
+		ccflags-y += -I$(TOP_DIR)/abl/bbox/inc/bbox
+		ccflags-y += -I$(TOP_DIR)/inc/driver
+		ccflags-y += -I$(DRIVER_OPEN_KERNEL_DIR)/inc
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/inc
+		ccflags-y += -I$(TOP_DIR)/abl/libc_sec/include
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/tsdrv_virt
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/devdrv_callback
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_dev
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_id
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_nvme
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_nvme/logic
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_nvme/shm
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/drv_devmng/drv_devmng_inc/
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_vm
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/drv_devmng/drv_devmng_host/ascend910
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/tsdrv_conflict_check
 	else
-		EXTRA_CFLAGS += -I$(DRIVER_OPEN_KERNEL_DIR)/inc
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/inc
-		EXTRA_CFLAGS += -I$(TOP_DIR)/inc/driver
-		EXTRA_CFLAGS += -I$(TOP_DIR)/abl/libc_sec/include
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/tsdrv_virt
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/ts_drv_common
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/ts_drv_common/devdrv_callback/
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/ts_drv_common/tsdrv_dev/
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/ts_drv_common/tsdrv_id
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/ts_drv_common/tsdrv_nvme
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/ts_drv_common/tsdrv_nvme/logic
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/ts_drv_common/tsdrv_nvme/shm
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/ts_drv_common/tsdrv_nvme/sync_cb
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/tsdrv_conflict_check
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_vm
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/drv_devmng/drv_devmng_host/ascend310
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/drv_devmng/drv_devmng_inc/
+		ccflags-y += -I$(DRIVER_OPEN_KERNEL_DIR)/inc
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/inc
+		ccflags-y += -I$(TOP_DIR)/inc/driver
+		ccflags-y += -I$(TOP_DIR)/abl/libc_sec/include
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/tsdrv_virt
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/ts_drv_common
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/ts_drv_common/devdrv_callback/
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/ts_drv_common/tsdrv_dev/
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/ts_drv_common/tsdrv_id
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/ts_drv_common/tsdrv_nvme
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/ts_drv_common/tsdrv_nvme/logic
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/ts_drv_common/tsdrv_nvme/shm
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/ts_drv_common/tsdrv_nvme/sync_cb
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/tsdrv_conflict_check
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_vm
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/drv_devmng/drv_devmng_host/ascend310
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/drv_devmng/drv_devmng_inc/
 	endif
 
 	ifneq ($(filter $(PRODUCT),  ascend910 ascend910B),)
-		EXTRA_CFLAGS += -I$(TOP_DIR)/inc/driver
-		EXTRA_CFLAGS += -I$(TOP_DIR)/inc/soc/cloud_v1
-		EXTRA_CFLAGS += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_open/src/kernel_adapt/include
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_platform/ts_platform_host/ascend910
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_conflict_check/ascend910
-		EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_CLOUD
-		EXTRA_CFLAGS += -DCFG_FEATURE_USE_MAILBOX_RECYCLE
-		EXTRA_CFLAGS += -DCFG_FEATURE_VFIO
-		EXTRA_CFLAGS += -DCFG_FEATURE_HOST_LOG
-		EXTRA_CFLAGS += -DCFG_FEATURE_KA_ALLOC_INTERFACE
+		ccflags-y += -I$(TOP_DIR)/inc/driver
+		ccflags-y += -I$(TOP_DIR)/inc/soc/cloud_v1
+		ccflags-y += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_open/src/kernel_adapt/include
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_platform/ts_platform_host/ascend910
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_conflict_check/ascend910
+		ccflags-y += -DCFG_SOC_PLATFORM_CLOUD
+		ccflags-y += -DCFG_FEATURE_USE_MAILBOX_RECYCLE
+		ccflags-y += -DCFG_FEATURE_VFIO
+		ccflags-y += -DCFG_FEATURE_HOST_LOG
+		ccflags-y += -DCFG_FEATURE_KA_ALLOC_INTERFACE
 		ifeq ($(PRODUCT),ascend910)
-		    EXTRA_CFLAGS += -DCFG_FEATURE_RUNTIME_NO_THREAD
+		    ccflags-y += -DCFG_FEATURE_RUNTIME_NO_THREAD
 		endif
 		ifneq ($(filter $(PRODUCT),  ascend910B),)
-			EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_CLOUD_V2
-			EXTRA_CFLAGS += -DCFG_FEATURE_CDQM
-			EXTRA_CFLAGS += -DCFG_FEATURE_CALLBACK_EVENT
-			EXTRA_CFLAGS += -DCFG_FEATURE_SQ_HOST_MEM
-			EXTRA_CFLAGS += -DCFG_FEATURE_CQ_HOST_MEM
-			EXTRA_CFLAGS += -DCFG_FEATURE_SUPPORT_VSQ_MNG
-			EXTRA_CFLAGS += -DCFG_FEATURE_RUNTIME_NO_THREAD
-			EXTRA_CFLAGS += -DCFG_FEATURE_STARS
-			EXTRA_CFLAGS += -DVER_CDQM_B607
-			EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_cdqm
-			EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/tsdrv_cdqm
+			ccflags-y += -DCFG_SOC_PLATFORM_CLOUD_V2
+			ccflags-y += -DCFG_FEATURE_CDQM
+			ccflags-y += -DCFG_FEATURE_CALLBACK_EVENT
+			ccflags-y += -DCFG_FEATURE_SQ_HOST_MEM
+			ccflags-y += -DCFG_FEATURE_CQ_HOST_MEM
+			ccflags-y += -DCFG_FEATURE_SUPPORT_VSQ_MNG
+			ccflags-y += -DCFG_FEATURE_RUNTIME_NO_THREAD
+			ccflags-y += -DCFG_FEATURE_STARS
+			ccflags-y += -DVER_CDQM_B607
+			ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_cdqm
+			ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/tsdrv_cdqm
 		endif
 	else ifneq ($(filter $(PRODUCT), ascend310 ascend310rc ascend310B ascend310Besl ascend310p ),)
-		EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_MINI
-		EXTRA_CFLAGS += -I$(TOP_DIR)/inc/driver
-		EXTRA_CFLAGS += -I$(TOP_DIR)/inc/soc/mini_v1
+		ccflags-y += -DCFG_SOC_PLATFORM_MINI
+		ccflags-y += -I$(TOP_DIR)/inc/driver
+		ccflags-y += -I$(TOP_DIR)/inc/soc/mini_v1
 		ifeq ($(PRODUCT),ascend310p)
-			EXTRA_CFLAGS += -DCFG_FEATURE_HOST_LOG
-			EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_MINIV2
-			EXTRA_CFLAGS += -DCFG_FEATURE_CQ_HOST_MEM
-			EXTRA_CFLAGS += -DCFG_FEATURE_IPC_NOTIFY_WITH_EVENTID
-			EXTRA_CFLAGS += -DCFG_FEATURE_RUNTIME_NO_THREAD
-			EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_HOST
-			EXTRA_CFLAGS += -DCFG_FEATURE_VFIO
-			EXTRA_CFLAGS += -DCFG_FEATURE_ID_MAPING
-			EXTRA_CFLAGS += -DCFG_FEATURE_USE_MAILBOX_RECYCLE
-			EXTRA_CFLAGS += -DCFG_FEATURE_KA_ALLOC_INTERFACE
-			EXTRA_CFLAGS += -DCFG_FEATURE_SHARE_LOG_INNER
-			EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_platform/ts_platform_host/ascend610
-			EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_conflict_check/ascend610
+			ccflags-y += -DCFG_FEATURE_HOST_LOG
+			ccflags-y += -DCFG_SOC_PLATFORM_MINIV2
+			ccflags-y += -DCFG_FEATURE_CQ_HOST_MEM
+			ccflags-y += -DCFG_FEATURE_IPC_NOTIFY_WITH_EVENTID
+			ccflags-y += -DCFG_FEATURE_RUNTIME_NO_THREAD
+			ccflags-y += -DCFG_SOC_PLATFORM_HOST
+			ccflags-y += -DCFG_FEATURE_VFIO
+			ccflags-y += -DCFG_FEATURE_ID_MAPING
+			ccflags-y += -DCFG_FEATURE_USE_MAILBOX_RECYCLE
+			ccflags-y += -DCFG_FEATURE_KA_ALLOC_INTERFACE
+			ccflags-y += -DCFG_FEATURE_SHARE_LOG_INNER
+			ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_platform/ts_platform_host/ascend610
+			ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_conflict_check/ascend610
 		else ifneq ($(filter $(PRODUCT), ascend310B ascend310Besl),)
-			EXTRA_CFLAGS += -DCFG_FEATURE_HOST_LOG
-			EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_MINIV3
-			EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_HOST
-			EXTRA_CFLAGS += -DCFG_FEATURE_CDQM
-			EXTRA_CFLAGS += -DCFG_FEATURE_CMO
-			EXTRA_CFLAGS += -DCFG_FEATURE_SUPPORT_VSQ_MNG
-			EXTRA_CFLAGS += -DCFG_FEATURE_USE_MAILBOX_RECYCLE
-			EXTRA_CFLAGS += -DCFG_FEATURE_RUNTIME_NO_THREAD
-			EXTRA_CFLAGS += -DCFG_FEATURE_STARS
-			EXTRA_CFLAGS += -DCFG_FEATURE_CALLBACK_EVENT
-			EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_cdqm
-			EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/tsdrv_cdqm
-			EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_platform/ts_platform_host/ascend610
-			EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_conflict_check/ascend610
+			ccflags-y += -DCFG_FEATURE_HOST_LOG
+			ccflags-y += -DCFG_SOC_PLATFORM_MINIV3
+			ccflags-y += -DCFG_SOC_PLATFORM_HOST
+			ccflags-y += -DCFG_FEATURE_CDQM
+			ccflags-y += -DCFG_FEATURE_CMO
+			ccflags-y += -DCFG_FEATURE_SUPPORT_VSQ_MNG
+			ccflags-y += -DCFG_FEATURE_USE_MAILBOX_RECYCLE
+			ccflags-y += -DCFG_FEATURE_RUNTIME_NO_THREAD
+			ccflags-y += -DCFG_FEATURE_STARS
+			ccflags-y += -DCFG_FEATURE_CALLBACK_EVENT
+			ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_cdqm
+			ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_host/tsdrv_cdqm
+			ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_platform/ts_platform_host/ascend610
+			ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_conflict_check/ascend610
 		else
-			EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_platform/ts_platform_host/ascend310
-			EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_conflict_check/ascend310
+			ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_platform/ts_platform_host/ascend310
+			ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_conflict_check/ascend310
 		endif
 	else
-		EXTRA_CFLAGS += -I$(TOP_DIR)/inc/driver
-		EXTRA_CFLAGS += -I$(TOP_DIR)/inc/soc/mini_v1
+		ccflags-y += -I$(TOP_DIR)/inc/driver
+		ccflags-y += -I$(TOP_DIR)/inc/soc/mini_v1
 		ifneq ($(filter $(PRODUCT), ascend610 bs9sx1a),)
-			EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_MINIV2
-			EXTRA_CFLAGS += -DCFG_FEATURE_RUNTIME_NO_THREAD
-			EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_platform/ts_platform_host/ascend610
-			EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_conflict_check/ascend610
+			ccflags-y += -DCFG_SOC_PLATFORM_MINIV2
+			ccflags-y += -DCFG_FEATURE_RUNTIME_NO_THREAD
+			ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_platform/ts_platform_host/ascend610
+			ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_drv/ts_drv_common/tsdrv_conflict_check/ascend610
 		else
-			EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_platform/ts_platform_host/ascend310
+			ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/tsdrv/ts_platform/ts_platform_host/ascend310
 		endif
 	endif
 

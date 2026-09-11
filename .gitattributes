@@ -1,0 +1,2 @@
+# Retain the vendor's mixed LF/CRLF source files without whitespace false positives.
+* whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol

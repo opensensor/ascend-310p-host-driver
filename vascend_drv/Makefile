@@ -23,7 +23,7 @@ else
     KERNEL_SOURCE_DIR=/lib/modules/$(UNAME)/source
 
     ifneq ($(NOT_SUPPORT_SP), y)
-        EXTRA_CFLAGS += -fstack-protector-all
+        ccflags-y += -fstack-protector-all
     endif
 
     ifeq ($(DAVINCI_TEST),y)
@@ -52,7 +52,7 @@ else
     else
 
     ifneq ($(NOT_SUPPORT_SP), y)
-        EXTRA_CFLAGS += -fstack-protector-all
+        ccflags-y += -fstack-protector-all
     endif
 
     ifeq ($(DAVINCI_TEST),y)

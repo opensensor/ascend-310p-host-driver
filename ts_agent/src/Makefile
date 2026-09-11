@@ -31,13 +31,13 @@ else
 endif
 
 
-EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_CLOUD_V2
-EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_STARS
+ccflags-y += -DCFG_SOC_PLATFORM_CLOUD_V2
+ccflags-y += -DCFG_SOC_PLATFORM_STARS
 STARS_FLAG = y
-EXTRA_CFLAGS += -DCFG_HOST_ENV
-EXTRA_CFLAGS += -DCFG_HOST_VIRTUAL_MACHINES
+ccflags-y += -DCFG_HOST_ENV
+ccflags-y += -DCFG_HOST_VIRTUAL_MACHINES
 
-EXTRA_CFLAGS += -I$(TMP_CURRENT_DIR)/inc/ \
+ccflags-y += -I$(TMP_CURRENT_DIR)/inc/ \
                 -I$(TMP_DEV_INC_DIR)/ \
                 -I$(TMP_TOP_DIR) \
                 -I$(TMP_TOP_DIR)/inc \
@@ -52,9 +52,9 @@ obj-m := ts_agent_vm.o
 
 
 ifeq ($(DAVINCI_HIAI_DKMS), y)
-    EXTRA_CFLAGS += -I$(TMP_TOP_DIR)/rms/trs_drv/inc/
+    ccflags-y += -I$(TMP_TOP_DIR)/rms/trs_drv/inc/
 else
-    EXTRA_CFLAGS += -I$(TMP_TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_space/src/rms/trs_drv/inc/
+    ccflags-y += -I$(TMP_TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_space/src/rms/trs_drv/inc/
 endif
 
 ts_agent_vm-objs := ts_agent_module.o \

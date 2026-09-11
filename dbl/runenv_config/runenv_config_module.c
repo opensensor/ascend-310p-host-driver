@@ -24,6 +24,7 @@
 #include "vm_query.h"
 #include "runenv_config_module.h"
 
+MODULE_DESCRIPTION("Ascend runtime environment configuration");
 KA_MODULE_LICENSE("GPL");
 KA_MODULE_AUTHOR("Huawei Tech. Co., Ltd.");
 KA_MODULE_AUTHOR("DAVINCI driver");

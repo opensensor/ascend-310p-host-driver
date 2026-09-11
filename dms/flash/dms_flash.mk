@@ -6,5 +6,5 @@ else #for CMake
 	else
 		$(MODULE_NAME)-y += flash/dms_flash.o
 	endif
-	EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/dms/flash
+	ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/dms/flash
 endif

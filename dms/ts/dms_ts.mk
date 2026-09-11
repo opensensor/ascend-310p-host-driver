@@ -12,6 +12,6 @@ else #for CMake & ctrl cpu open
 			$(MODULE_NAME)-y += ts/dms_ts_npu_utilization.o
 		endif
 	endif
-	EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/dms/ts
-	EXTRA_CFLAGS += -DCFG_FEATURE_TS
+	ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/dms/ts
+	ccflags-y += -DCFG_FEATURE_TS
 endif

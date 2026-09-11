@@ -24,14 +24,14 @@ else ifeq ($(DAVINCI_HIAI_DKMS), y)
     TMP_OPEN_KA_INC_DIR = $(TMP_TOP_DIR)/kernel_adapt/include
     TMP_LIBC_SEC_BASE_DIR = $(TMP_TOP_DIR)
     ifeq ($(TARGET_CHIP_ID), hi1980b)
-        EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_CLOUD_V2
-        EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_STARS
+        ccflags-y += -DCFG_SOC_PLATFORM_CLOUD_V2
+        ccflags-y += -DCFG_SOC_PLATFORM_STARS
         STARS_FLAG = y
     endif
     ifeq ($(TARGET_CHIP_ID), hi1910b)
-        EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_MINIV3
-        EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_STARS
-        EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_MINIV3_EP
+        ccflags-y += -DCFG_SOC_PLATFORM_MINIV3
+        ccflags-y += -DCFG_SOC_PLATFORM_STARS
+        ccflags-y += -DCFG_SOC_PLATFORM_MINIV3_EP
         STARS_FLAG = y
     endif
 else
@@ -47,39 +47,39 @@ else
 endif
 
 ifneq ($(filter $(PRODUCT), ascend910B ascend920esl ascend920emu),)
-    EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_CLOUD_V2
-    EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_STARS
+    ccflags-y += -DCFG_SOC_PLATFORM_CLOUD_V2
+    ccflags-y += -DCFG_SOC_PLATFORM_STARS
     STARS_FLAG = y
 else ifneq ($(filter $(PRODUCT), ascend310B ascend310Besl ascend310Bemu ascend310Brc ascend310Brcesl ascend310Brcemu as31xm1),)
-    EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_MINIV3
-    EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_STARS
+    ccflags-y += -DCFG_SOC_PLATFORM_MINIV3
+    ccflags-y += -DCFG_SOC_PLATFORM_STARS
     STARS_FLAG = y
     ifneq ($(filter $(PRODUCT), ascend310B ascend310Besl ascend310Bemu),)
-        EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_MINIV3_EP
+        ccflags-y += -DCFG_SOC_PLATFORM_MINIV3_EP
     endif
     ifneq ($(filter $(PRODUCT), ascend310Brc ascend310Brcesl ascend310Brcemu as31xm1),)
-        EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_MINIV3_RC
+        ccflags-y += -DCFG_SOC_PLATFORM_MINIV3_RC
     endif
 else
 endif
 
 ifeq ($(DAVINCI_HIAI_DKMS), y)
-    EXTRA_CFLAGS += -DCFG_HOST_ENV
-    EXTRA_CFLAGS += -I$(TMP_OPEN_INC_DIR)
-    EXTRA_CFLAGS += -I$(TMP_DEV_INC_DIR)
+    ccflags-y += -DCFG_HOST_ENV
+    ccflags-y += -I$(TMP_OPEN_INC_DIR)
+    ccflags-y += -I$(TMP_DEV_INC_DIR)
 else
 ifeq ($(PRODUCT_SIDE), host)
-    EXTRA_CFLAGS += -DCFG_HOST_ENV
-    EXTRA_CFLAGS += -I$(TMP_OPEN_INC_DIR)
-    EXTRA_CFLAGS += -I$(TMP_DEV_INC_DIR)
+    ccflags-y += -DCFG_HOST_ENV
+    ccflags-y += -I$(TMP_OPEN_INC_DIR)
+    ccflags-y += -I$(TMP_DEV_INC_DIR)
 else
-    EXTRA_CFLAGS += -DCFG_DEVICE_ENV
-    EXTRA_CFLAGS += -I$(TMP_DEV_INC_DIR)
-    EXTRA_CFLAGS += -I$(TMP_OPEN_INC_DIR)
+    ccflags-y += -DCFG_DEVICE_ENV
+    ccflags-y += -I$(TMP_DEV_INC_DIR)
+    ccflags-y += -I$(TMP_OPEN_INC_DIR)
 endif
 endif
 
-EXTRA_CFLAGS += -I$(TMP_CURRENT_DIR)/inc/ \
+ccflags-y += -I$(TMP_CURRENT_DIR)/inc/ \
                 -I$(TMP_TOP_DIR) \
                 -I$(TMP_TOP_DIR)/inc \
                 -I$(TMP_TOP_DIR)/inc/driver \
@@ -93,9 +93,9 @@ obj-m := ts_agent.o
 
 ifeq ($(STARS_FLAG),y)
     ifeq ($(DAVINCI_HIAI_DKMS), y)
-        EXTRA_CFLAGS += -I$(TMP_TOP_DIR)/rms/trs_drv/inc/
+        ccflags-y += -I$(TMP_TOP_DIR)/rms/trs_drv/inc/
     else
-        EXTRA_CFLAGS += -I$(TMP_TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_space/src/rms/trs_drv/inc/
+        ccflags-y += -I$(TMP_TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_space/src/rms/trs_drv/inc/
     endif
 ts_agent-objs := src/ts_agent_module.o \
                  src/ts_agent_update_sqe.o

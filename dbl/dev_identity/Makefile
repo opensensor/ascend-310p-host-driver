@@ -1,15 +1,15 @@
 ifeq ($(DAVINCI_HIAI_DKMS), y)
-    EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dev_inc/inc
-    EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dbl/inc
-    EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/kernel_adapt/include
+    ccflags-y += -I$(HIAI_DKMS_DIR)/dev_inc/inc
+    ccflags-y += -I$(HIAI_DKMS_DIR)/dbl/inc
+    ccflags-y += -I$(HIAI_DKMS_DIR)/kernel_adapt/include
 else
-    EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/inc
-    EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/dbl/inc
-    EXTRA_CFLAGS += -I$(DRIVER_KERNEL_OPEN_DIR)/src/kernel_adapt/include
+    ccflags-y += -I$(DRIVER_KERNEL_DIR)/inc
+    ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/dbl/inc
+    ccflags-y += -I$(DRIVER_KERNEL_OPEN_DIR)/src/kernel_adapt/include
 endif
 
 ifneq ($(NOT_SUPPORT_SP), y)
-    EXTRA_CFLAGS += -fstack-protector-all
+    ccflags-y += -fstack-protector-all
 endif
 
 ccflags-y += -Wall -Werror -Wtrampolines -Wfloat-equal -Wvla -Wundef $(WDATE_TIME)

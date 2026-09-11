@@ -89,6 +89,7 @@ STATIC void __exit queue_module_exit(void)
 ka_module_init(queue_module_init);
 ka_module_exit(queue_module_exit);
 
+MODULE_DESCRIPTION("Ascend host queue management");
 KA_MODULE_LICENSE("GPL");
 #else
 void queue_module_ut(void)

@@ -2,7 +2,7 @@
 ifeq ($(TOP_DIR),)
 
 ifneq ($(NOT_SUPPORT_SP), y)
-EXTRA_CFLAGS += -fstack-protector-all
+ccflags-y += -fstack-protector-all
 endif
 
 DVT_DIR=$(shell pwd)
@@ -10,7 +10,7 @@ UNAME=$(shell uname -r)
 KERNEL_DIR=/lib/modules/$(UNAME)/build
 KERNEL_SOURCE_DIR=/lib/modules/$(UNAME)/source
 
-EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/kernel_adapt/include
+ccflags-y += -I$(HIAI_DKMS_DIR)/kernel_adapt/include
 
 ifeq ($(DAVINCI_TEST),y)
     ccflags-y += -DDAVINCI_TEST
@@ -36,10 +36,10 @@ clean:
 
 else
 
-EXTRA_CFLAGS += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_open/src/kernel_adapt/include
+ccflags-y += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_open/src/kernel_adapt/include
 
 ifneq ($(NOT_SUPPORT_SP), y)
-EXTRA_CFLAGS += -fstack-protector-all
+ccflags-y += -fstack-protector-all
 endif
 
 ifeq ($(DAVINCI_TEST),y)

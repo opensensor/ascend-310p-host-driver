@@ -14,7 +14,7 @@ ifeq ($(TOP_DIR),)
 		ifneq ($(filter $(TARGET_CHIP_ID), hi1910b hi1980 hi1980b),)
 			drv_devmng_host-y += status/dms_osc_freq.o
 		endif
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dms/status
+		ccflags-y += -I$(HIAI_DKMS_DIR)/dms/status
 	endif
 else #for CMake & ctrl cpu open
 	ifeq ($(PRODUCT_SIDE), host)
@@ -44,16 +44,16 @@ else #for CMake & ctrl cpu open
 		endif
 
 		ifneq ($(filter $(PRODUCT), ascend910B),)
-			EXTRA_CFLAGS += -DCFG_FEATURE_GET_DEV_UUID
+			ccflags-y += -DCFG_FEATURE_GET_DEV_UUID
 		endif
 
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/dms/time/device
-		EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/dms/power
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/dms/time/device
+		ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/dms/power
 		ifneq ($(filter $(PRODUCT), ascend310B ascend310Brc ascend310p ascend910 ascend910B),)
-			EXTRA_CFLAGS += -DCFG_FEATURE_SDK_EX_VERSION
+			ccflags-y += -DCFG_FEATURE_SDK_EX_VERSION
 			$(MODULE_NAME)-y += status/dms_sdk_ex_version.o
 		endif
 	endif
-	EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/dms/status
-	EXTRA_CFLAGS += -I${TOP_DIR}/abl/bbox/inc/bbox/device/
+	ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/dms/status
+	ccflags-y += -I${TOP_DIR}/abl/bbox/inc/bbox/device/
 endif

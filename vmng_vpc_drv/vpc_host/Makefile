@@ -1,15 +1,15 @@
 ifeq ($(DAVINCI_HIAI_DKMS),y)
-	EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/vmng_host
-	EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/vmng_vpc_drv/vpc_host
-	EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/vmng_vpc_drv/vpc_host/adapt
-	EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/vascend_drv_stub
-	EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/kernel_adapt/include
+	ccflags-y += -I$(HIAI_DKMS_DIR)/vmng_host
+	ccflags-y += -I$(HIAI_DKMS_DIR)/vmng_vpc_drv/vpc_host
+	ccflags-y += -I$(HIAI_DKMS_DIR)/vmng_vpc_drv/vpc_host/adapt
+	ccflags-y += -I$(HIAI_DKMS_DIR)/vascend_drv_stub
+	ccflags-y += -I$(HIAI_DKMS_DIR)/kernel_adapt/include
 else
-	EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/virtmng/vmng_host
-	EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/virtmng/vmng_vpc_drv/vpc_host
-	EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/virtmng/vmng_vpc_drv/vpc_host/adapt
-	EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/vascend_drv/vascend_drv_stub
-	EXTRA_CFLAGS += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_open/src/kernel_adapt/include
+	ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/virtmng/vmng_host
+	ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/virtmng/vmng_vpc_drv/vpc_host
+	ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/virtmng/vmng_vpc_drv/vpc_host/adapt
+	ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/vascend_drv/vascend_drv_stub
+	ccflags-y += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_open/src/kernel_adapt/include
 endif
 
 drv_vpc_host-objs += vpc_host/virtmnghost_msg.o vpc_host/virtmnghost_msg_common.o vpc_host/virtmnghost_msg_admin.o

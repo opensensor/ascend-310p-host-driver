@@ -607,7 +607,7 @@ STATIC int devdrv_mdc_v2_register_peer_fault_handle(struct devdrv_pci_ctrl *pci_
         return -EINVAL;
     }
 
-    ret = gpio_request_one(PCIE_ERR_IN_GPIO5_01, GPIOF_DIR_IN, gpio5_01_name);
+    ret = gpio_request_one(PCIE_ERR_IN_GPIO5_01, GPIOF_IN, gpio5_01_name);
     if (ret != 0) {
         devdrv_err("gpio request fail. (ret=%d)\n", ret);
         return -EINVAL;

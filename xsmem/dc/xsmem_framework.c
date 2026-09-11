@@ -2384,4 +2384,5 @@ STATIC void __exit xsmem_exit(void)
 }
 ka_module_exit(xsmem_exit);
 
+MODULE_DESCRIPTION("Ascend cross-system shared memory");
 KA_MODULE_LICENSE("GPL v2");

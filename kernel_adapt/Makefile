@@ -1,32 +1,32 @@
 ifdef BUILD_OPEN_SRC # for build.sh script build
     TARGET_SRC_DIR := $(DRIVER_KERNEL_OPEN_SOURCE_DIR)/src
-    EXTRA_CFLAGS += -I$(DRIVER_KERNEL_OPEN_SOURCE_DIR)/inc/depends/sec
+    ccflags-y += -I$(DRIVER_KERNEL_OPEN_SOURCE_DIR)/inc/depends/sec
 else
     ifeq ($(TOP_DIR),) # for dkms
         KERNEL_DIR :=$(srctree)
         # HIAI_DKMS_DIR = driver/kernel
         DRIVER_SRC_BASE_DIR := $(HIAI_DKMS_DIR)
         TARGET_SRC_DIR := $(HIAI_DKMS_DIR)
-        EXTRA_CFLAGS += -I$(TARGET_SRC_DIR)/libc_sec/include/
+        ccflags-y += -I$(TARGET_SRC_DIR)/libc_sec/include/
     else # for ci
         TARGET_SRC_DIR := $(DRIVER_KERNEL_OPEN_SOURCE_DIR)/src
-        EXTRA_CFLAGS += -I$(DRIVER_KERNEL_OPEN_SOURCE_DIR)/inc/depends/sec
+        ccflags-y += -I$(DRIVER_KERNEL_OPEN_SOURCE_DIR)/inc/depends/sec
     endif
 endif
 
-EXTRA_CFLAGS += -I$(TARGET_SRC_DIR)/kernel_adapt/
-EXTRA_CFLAGS += -I$(TARGET_SRC_DIR)/kernel_adapt/include
-EXTRA_CFLAGS += -I$(TARGET_SRC_DIR)/kernel_adapt/base
-EXTRA_CFLAGS += -I$(TARGET_SRC_DIR)/kernel_adapt/dfx
-EXTRA_CFLAGS += -I$(TARGET_SRC_DIR)/kernel_adapt/driver
-EXTRA_CFLAGS += -I$(TARGET_SRC_DIR)/kernel_adapt/fs
-EXTRA_CFLAGS += -I$(TARGET_SRC_DIR)/kernel_adapt/memory
-EXTRA_CFLAGS += -I$(TARGET_SRC_DIR)/kernel_adapt/net
-EXTRA_CFLAGS += -I$(TARGET_SRC_DIR)/kernel_adapt/pci
-EXTRA_CFLAGS += -I$(TARGET_SRC_DIR)/kernel_adapt/system
-EXTRA_CFLAGS += -I$(TARGET_SRC_DIR)/kernel_adapt/task
+ccflags-y += -I$(TARGET_SRC_DIR)/kernel_adapt/
+ccflags-y += -I$(TARGET_SRC_DIR)/kernel_adapt/include
+ccflags-y += -I$(TARGET_SRC_DIR)/kernel_adapt/base
+ccflags-y += -I$(TARGET_SRC_DIR)/kernel_adapt/dfx
+ccflags-y += -I$(TARGET_SRC_DIR)/kernel_adapt/driver
+ccflags-y += -I$(TARGET_SRC_DIR)/kernel_adapt/fs
+ccflags-y += -I$(TARGET_SRC_DIR)/kernel_adapt/memory
+ccflags-y += -I$(TARGET_SRC_DIR)/kernel_adapt/net
+ccflags-y += -I$(TARGET_SRC_DIR)/kernel_adapt/pci
+ccflags-y += -I$(TARGET_SRC_DIR)/kernel_adapt/system
+ccflags-y += -I$(TARGET_SRC_DIR)/kernel_adapt/task
 
-EXTRA_CFLAGS += -Wno-error=type-limits # for kernel 5.15
+ccflags-y += -Wno-error=type-limits # for kernel 5.15
 ccflags-y += -Wno-implicit-function-declaration
 
 # check if gcc support -Wno-error=cast-function-type
@@ -34,14 +34,14 @@ CHECK_FLAG := $(shell echo "int main() { return 0; }" | ${CC} -x c -Wno-error=ca
 
 # add cflags -Wno-error=cast-function-type
 ifeq ($(CHECK_FLAG),supported)
-    EXTRA_CFLAGS += -Wno-error=cast-function-type
+    ccflags-y += -Wno-error=cast-function-type
 endif
 
 ifeq ($(TARGET_BUILD_TYPE),debug)
-    EXTRA_CFLAGS += -DCFG_BUILD_DEBUG
+    ccflags-y += -DCFG_BUILD_DEBUG
 endif
 ifneq ($(NOT_SUPPORT_SP), y)
-    EXTRA_CFLAGS += -fstack-protector-all
+    ccflags-y += -fstack-protector-all
 endif
 
 ifneq ($(filter $(ARCH), arm64 x86), )
@@ -50,9 +50,9 @@ else
 $(error NOT supported ARCH: $(ARCH))
 endif
 
-EXTRA_CFLAGS += -Wall -Werror
+ccflags-y += -Wall -Werror
 
-$(info $(EXTRA_CFLAGS))
+$(info $(ccflags-y))
 
 ccflags-y += -Wall -Werror -Wtrampolines $(WDATE_TIME) -Wfloat-equal -Wvla -Wundef -funsigned-char -Wformat=2 -Wstack-usage=2048 -Wcast-align -Wextra
 ccflags-y += -Wno-unused-parameter -O2 -Wno-missing-field-initializers -Wno-sign-compare -Wno-format-nonliteral

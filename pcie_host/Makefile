@@ -1,114 +1,114 @@
 ifeq ($(DAVINCI_HIAI_DKMS),y)
-    EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/pcie_host/soc_adapt
-    EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/pcie_host
-    EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/common_h
-    EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dev_inc_open/inc
-    EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dev_inc_open/inc/depends/
-    EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dev_inc_open/inc/depends/dbl
-    EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dev_inc_open/inc/depends/log
-    EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dev_inc_open/inc/depends/vpc
-    EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/pcie_host/interfaces
-    EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/inc/driver
-    EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/libc_sec/include
+    ccflags-y += -I$(HIAI_DKMS_DIR)/pcie_host/soc_adapt
+    ccflags-y += -I$(HIAI_DKMS_DIR)/pcie_host
+    ccflags-y += -I$(HIAI_DKMS_DIR)/common_h
+    ccflags-y += -I$(HIAI_DKMS_DIR)/dev_inc_open/inc
+    ccflags-y += -I$(HIAI_DKMS_DIR)/dev_inc_open/inc/depends/
+    ccflags-y += -I$(HIAI_DKMS_DIR)/dev_inc_open/inc/depends/dbl
+    ccflags-y += -I$(HIAI_DKMS_DIR)/dev_inc_open/inc/depends/log
+    ccflags-y += -I$(HIAI_DKMS_DIR)/dev_inc_open/inc/depends/vpc
+    ccflags-y += -I$(HIAI_DKMS_DIR)/pcie_host/interfaces
+    ccflags-y += -I$(HIAI_DKMS_DIR)/inc/driver
+    ccflags-y += -I$(HIAI_DKMS_DIR)/libc_sec/include
 
     ifeq ($(TARGET_PRODUCT),cloud)
         ifeq ($(TARGET_CHIP_ID), $(A9XXGEN02M01))
         else
-            EXTRA_CFLAGS += -DCFG_FEATURE_DMI
+            ccflags-y += -DCFG_FEATURE_DMI
         endif
         ifeq ($(TARGET_CHIP_ID), hi1980b)
-            EXTRA_CFLAGS += -DCFG_FEATURE_SRIOV
-            EXTRA_CFLAGS += -DCFG_FEATURE_PASSID
-            EXTRA_CFLAGS += -DCFG_FEATURE_AGENT_SMMU
-            EXTRA_CFLAGS += -DCFG_FEATURE_AGENT_S2S
+            ccflags-y += -DCFG_FEATURE_SRIOV
+            ccflags-y += -DCFG_FEATURE_PASSID
+            ccflags-y += -DCFG_FEATURE_AGENT_SMMU
+            ccflags-y += -DCFG_FEATURE_AGENT_S2S
         endif
     else
         ifeq ($(TARGET_CHIP_ID),$(ASCEND_FLORENCE_DC_V10))
-            EXTRA_CFLAGS += -DCFG_FEATURE_HOST_LOG
-            EXTRA_CFLAGS += -DCFG_FEATURE_KA_ALLOC_INTERFACE
-            EXTRA_CFLAGS += -DCFG_FEATURE_P2P_EXTEND
+            ccflags-y += -DCFG_FEATURE_HOST_LOG
+            ccflags-y += -DCFG_FEATURE_KA_ALLOC_INTERFACE
+            ccflags-y += -DCFG_FEATURE_P2P_EXTEND
         endif
     endif
 
     ifneq ($(filter $(TARGET_CHIP_ID), hi1910b hi1980 hi1980b),)
-        EXTRA_CFLAGS += -DCFG_FEATURE_HOST_LOG
-        EXTRA_CFLAGS += -DCFG_FEATURE_KA_ALLOC_INTERFACE
+        ccflags-y += -DCFG_FEATURE_HOST_LOG
+        ccflags-y += -DCFG_FEATURE_KA_ALLOC_INTERFACE
     endif
 else
     ifeq ($(ENABLE_OPEN_SRC),y)
-        EXTRA_CFLAGS += -I$(DRIVER_OPEN_KERNEL_DIR)/inc/depends/inc_driver
-        EXTRA_CFLAGS += -I$(DRIVER_OPEN_KERNEL_DIR)/inc/depends/sec
+        ccflags-y += -I$(DRIVER_OPEN_KERNEL_DIR)/inc/depends/inc_driver
+        ccflags-y += -I$(DRIVER_OPEN_KERNEL_DIR)/inc/depends/sec
     else
-        EXTRA_CFLAGS += -I$(TOP_DIR)/inc/driver/
-        EXTRA_CFLAGS += -I$(TOP_DIR)/abl/libc_sec/include
+        ccflags-y += -I$(TOP_DIR)/inc/driver/
+        ccflags-y += -I$(TOP_DIR)/abl/libc_sec/include
     endif
-    EXTRA_CFLAGS += -I$(DRIVER_OPEN_KERNEL_DIR)/inc/
-    EXTRA_CFLAGS += -I$(DRIVER_OPEN_KERNEL_DIR)/inc/depends/
-    EXTRA_CFLAGS += -I$(DRIVER_OPEN_KERNEL_DIR)/inc/depends/dbl
-    EXTRA_CFLAGS += -I$(DRIVER_OPEN_KERNEL_DIR)/inc/depends/vpc
-    EXTRA_CFLAGS += -I$(DRIVER_OPEN_KERNEL_DIR)/inc/depends/log
-    EXTRA_CFLAGS += -I$(DRIVER_OPEN_KERNEL_DIR)/src/drv_pcie/common_h/
-    EXTRA_CFLAGS += -I$(DRIVER_OPEN_KERNEL_DIR)/src/drv_pcie/pcie_host/
-    EXTRA_CFLAGS += -I$(DRIVER_OPEN_KERNEL_DIR)/src/drv_pcie/pcie_host/soc_adapt/
+    ccflags-y += -I$(DRIVER_OPEN_KERNEL_DIR)/inc/
+    ccflags-y += -I$(DRIVER_OPEN_KERNEL_DIR)/inc/depends/
+    ccflags-y += -I$(DRIVER_OPEN_KERNEL_DIR)/inc/depends/dbl
+    ccflags-y += -I$(DRIVER_OPEN_KERNEL_DIR)/inc/depends/vpc
+    ccflags-y += -I$(DRIVER_OPEN_KERNEL_DIR)/inc/depends/log
+    ccflags-y += -I$(DRIVER_OPEN_KERNEL_DIR)/src/drv_pcie/common_h/
+    ccflags-y += -I$(DRIVER_OPEN_KERNEL_DIR)/src/drv_pcie/pcie_host/
+    ccflags-y += -I$(DRIVER_OPEN_KERNEL_DIR)/src/drv_pcie/pcie_host/soc_adapt/
 
     ifneq ($(filter $(PRODUCT),  ascend910),)
-        EXTRA_CFLAGS += -DCFG_FEATURE_DMI
-        EXTRA_CFLAGS += -DCFG_FEATURE_HOST_LOG
-        EXTRA_CFLAGS += -DCFG_FEATURE_KA_ALLOC_INTERFACE
+        ccflags-y += -DCFG_FEATURE_DMI
+        ccflags-y += -DCFG_FEATURE_HOST_LOG
+        ccflags-y += -DCFG_FEATURE_KA_ALLOC_INTERFACE
     endif
 
     ifneq ($(filter $(PRODUCT),  ascend910B),)
-        EXTRA_CFLAGS += -DCFG_FEATURE_DMI
-        EXTRA_CFLAGS += -DCFG_FEATURE_SRIOV
-        EXTRA_CFLAGS += -DCFG_FEATURE_PASSID
-        EXTRA_CFLAGS += -DCFG_FEATURE_HOST_LOG
-        EXTRA_CFLAGS += -DCFG_FEATURE_AGENT_SMMU
-        EXTRA_CFLAGS += -DCFG_FEATURE_AGENT_S2S
-        EXTRA_CFLAGS += -DCFG_FEATURE_KA_ALLOC_INTERFACE
+        ccflags-y += -DCFG_FEATURE_DMI
+        ccflags-y += -DCFG_FEATURE_SRIOV
+        ccflags-y += -DCFG_FEATURE_PASSID
+        ccflags-y += -DCFG_FEATURE_HOST_LOG
+        ccflags-y += -DCFG_FEATURE_AGENT_SMMU
+        ccflags-y += -DCFG_FEATURE_AGENT_S2S
+        ccflags-y += -DCFG_FEATURE_KA_ALLOC_INTERFACE
     endif
 
     ifneq ($(filter $(PRODUCT),  as31xm1),)
-        EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_MDC_V11
-        EXTRA_CFLAGS += -DCFG_FEATURE_PCIE_LINK_INFO
-        EXTRA_CFLAGS += -DCFG_FEATURE_DUMP_PCIE_DFX
+        ccflags-y += -DCFG_SOC_PLATFORM_MDC_V11
+        ccflags-y += -DCFG_FEATURE_PCIE_LINK_INFO
+        ccflags-y += -DCFG_FEATURE_DUMP_PCIE_DFX
     endif
 
     ifneq ($(filter $(PRODUCT),  ascend610Lite),)
-        EXTRA_CFLAGS += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_space/src/dms/include
-        EXTRA_CFLAGS += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_space/inc
-        EXTRA_CFLAGS += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_space/src/dms/config
-        EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_MDC_V51_LITE
-        EXTRA_CFLAGS += -DCFG_FEATURE_PCIE_LINK_INFO
-        EXTRA_CFLAGS += -DCFG_FEATURE_SYSFS_DUMP_DFX
-        EXTRA_CFLAGS += -DCFG_FEATURE_DUMP_PCIE_DFX
-        EXTRA_CFLAGS += -DCFG_FEATURE_PCIE_SENTRY
-        EXTRA_CFLAGS += -DCFG_FEATURE_SEC_COMM_L3
+        ccflags-y += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_space/src/dms/include
+        ccflags-y += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_space/inc
+        ccflags-y += -I$(TOP_DIR)/drivers/ai_sdk/arc/linux/kernel_space/src/dms/config
+        ccflags-y += -DCFG_SOC_PLATFORM_MDC_V51_LITE
+        ccflags-y += -DCFG_FEATURE_PCIE_LINK_INFO
+        ccflags-y += -DCFG_FEATURE_SYSFS_DUMP_DFX
+        ccflags-y += -DCFG_FEATURE_DUMP_PCIE_DFX
+        ccflags-y += -DCFG_FEATURE_PCIE_SENTRY
+        ccflags-y += -DCFG_FEATURE_SEC_COMM_L3
     endif
 
     ifneq ($(filter $(PRODUCT),  ascend310B),)
-        EXTRA_CFLAGS += -DCFG_FEATURE_HOST_LOG
-        EXTRA_CFLAGS += -DCFG_FEATURE_KA_ALLOC_INTERFACE
+        ccflags-y += -DCFG_FEATURE_HOST_LOG
+        ccflags-y += -DCFG_FEATURE_KA_ALLOC_INTERFACE
     endif
 
     ifneq ($(filter $(PRODUCT),  ascend310p),)
-        EXTRA_CFLAGS += -DCFG_FEATURE_HOST_LOG
-        EXTRA_CFLAGS += -DCFG_FEATURE_KA_ALLOC_INTERFACE
-        EXTRA_CFLAGS += -DCFG_FEATURE_P2P_EXTEND
+        ccflags-y += -DCFG_FEATURE_HOST_LOG
+        ccflags-y += -DCFG_FEATURE_KA_ALLOC_INTERFACE
+        ccflags-y += -DCFG_FEATURE_P2P_EXTEND
     endif
 endif
 
 ifeq ($(strip $(TARGET_BUILD_TYPE)),debug)
-    EXTRA_CFLAGS += -DCFG_BUILD_DEBUG
+    ccflags-y += -DCFG_BUILD_DEBUG
 endif
 
-EXTRA_CFLAGS += -DCFG_HOST
-EXTRA_CFLAGS += -DCFG_FEATURE_SHARE_LOG
+ccflags-y += -DCFG_HOST
+ccflags-y += -DCFG_FEATURE_SHARE_LOG
 ifneq ($(NOT_SUPPORT_SP), y)
-    EXTRA_CFLAGS += -fstack-protector-all
+    ccflags-y += -fstack-protector-all
 endif
 
 ifeq ($(ENABLE_ASAN),true)
-    EXTRA_CFLAGS += -DCFG_ENABLE_ASAN
+    ccflags-y += -DCFG_ENABLE_ASAN
 endif
 ifeq ($(CUSTOM_OS_CCFLAGS), )
 ccflags-y += -Wall -Werror -Wtrampolines $(WDATE_TIME) -Wfloat-equal -Wvla -Wundef -funsigned-char -Wformat=2 -Wstack-usage=2048 -Wcast-align

@@ -7,10 +7,10 @@ else #for CMake & ctrl cpu open
              ascend_dms_smf-y += report/dfm_dev_register.o
              ascend_dms_smf-y += report/dfm_report.o
              ascend_dms_smf-y += report/dfm_safety_report.o
-            EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/fpdc
+            ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/fpdc
 
             ifeq ($(strip $(TARGET_BUILD_TYPE)),debug)
-                EXTRA_CFLAGS += -DCFG_BUILD_DEBUG
+                ccflags-y += -DCFG_BUILD_DEBUG
             endif
         endif
     endif

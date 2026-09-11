@@ -2,110 +2,110 @@ KERNEL_DIR :=$(srctree)
 
 ifeq ($(TOP_DIR),)         # for DKMS cmake
     ifneq ($(NOT_SUPPORT_SP), y)
-        EXTRA_CFLAGS += -fstack-protector-all
+        ccflags-y += -fstack-protector-all
     endif
-    EXTRA_CFLAGS += -DCFG_FEATURE_MEMALLOC_MODULE_TYPE=3
-    EXTRA_CFLAGS += -DCFG_FEATURE_MEMALLOC_SUBMODULE_TYPE=2
-    EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/kernel_adapt/include
-    EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dev_inc/inc/dbl
-    EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/libc_sec/include
-    EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dev_inc/inc
-    EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/inc/driver
-    EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/common
+    ccflags-y += -DCFG_FEATURE_MEMALLOC_MODULE_TYPE=3
+    ccflags-y += -DCFG_FEATURE_MEMALLOC_SUBMODULE_TYPE=2
+    ccflags-y += -I$(HIAI_DKMS_DIR)/kernel_adapt/include
+    ccflags-y += -I$(HIAI_DKMS_DIR)/dev_inc/inc/dbl
+    ccflags-y += -I$(HIAI_DKMS_DIR)/libc_sec/include
+    ccflags-y += -I$(HIAI_DKMS_DIR)/dev_inc/inc
+    ccflags-y += -I$(HIAI_DKMS_DIR)/inc/driver
+    ccflags-y += -I$(HIAI_DKMS_DIR)/common
 
-    EXTRA_CFLAGS += -DCFG_HOST_ENV
-    EXTRA_CFLAGS += -DCFG_FEATURE_HOST_ENV
+    ccflags-y += -DCFG_HOST_ENV
+    ccflags-y += -DCFG_FEATURE_HOST_ENV
     ifneq ($(filter $(TARGET_CHIP_ID), hi1910b hi1980 hi1980b),)
-        EXTRA_CFLAGS += -DCFG_FEATURE_HOST_LOG
-        EXTRA_CFLAGS += -DCFG_FEATURE_KA_ALLOC_INTERFACE
+        ccflags-y += -DCFG_FEATURE_HOST_LOG
+        ccflags-y += -DCFG_FEATURE_KA_ALLOC_INTERFACE
     endif
 
     ifeq ($(TARGET_PRODUCT),mdc)
-        EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_MDC_V51
+        ccflags-y += -DCFG_SOC_PLATFORM_MDC_V51
     endif
 
     ifeq ($(TARGET_PRODUCT),mini)
-        EXTRA_CFLAGS += -DCFG_FEATURE_EP_MODE
+        ccflags-y += -DCFG_FEATURE_EP_MODE
     endif
     ifeq ($(TARGET_PRODUCT),cloud)
-        EXTRA_CFLAGS += -DCFG_FEATURE_EP_MODE
+        ccflags-y += -DCFG_FEATURE_EP_MODE
     endif
     ifeq ($(TARGET_CHIP_ID), $(ASCEND_FLORENCE_DC_V10))
-        EXTRA_CFLAGS += -DCFG_FEATURE_EP_MODE
-        EXTRA_CFLAGS += -DCFG_FEATURE_VFG
-        EXTRA_CFLAGS += -DCFG_FEATURE_HOST_LOG
+        ccflags-y += -DCFG_FEATURE_EP_MODE
+        ccflags-y += -DCFG_FEATURE_VFG
+        ccflags-y += -DCFG_FEATURE_HOST_LOG
     endif
 
     ifeq ($(TARGET_CHIP_ID), hi1980b)
-        EXTRA_CFLAGS += -DCFG_FEATURE_SRIOV
-        EXTRA_CFLAGS += -DCFG_FEATURE_VFG
-        EXTRA_CFLAGS += -DCFG_CHIP_INFO_FROM_DEVINFO
-        EXTRA_CFLAGS += -DCFG_FEATURE_TOPOLOGY_BY_HCCS_STATUS
+        ccflags-y += -DCFG_FEATURE_SRIOV
+        ccflags-y += -DCFG_FEATURE_VFG
+        ccflags-y += -DCFG_CHIP_INFO_FROM_DEVINFO
+        ccflags-y += -DCFG_FEATURE_TOPOLOGY_BY_HCCS_STATUS
     else
-        EXTRA_CFLAGS += -DCFG_FEATURE_TOPOLOGY_BY_SMP
+        ccflags-y += -DCFG_FEATURE_TOPOLOGY_BY_SMP
     endif
 
 else     # for cmake
 
     ifeq ($(PRODUCT_SIDE), host)
-        EXTRA_CFLAGS += -DCFG_HOST_ENV
-        EXTRA_CFLAGS += -DCFG_FEATURE_DEVICE_ENV
+        ccflags-y += -DCFG_HOST_ENV
+        ccflags-y += -DCFG_FEATURE_DEVICE_ENV
         ifneq ($(filter $(PRODUCT), ascend910B), )
-            EXTRA_CFLAGS += -DCFG_CHIP_INFO_FROM_DEVINFO
+            ccflags-y += -DCFG_CHIP_INFO_FROM_DEVINFO
         endif
         ifneq ($(filter $(PRODUCT), ascend310B ascend310p ascend910 ascend910B),)
-            EXTRA_CFLAGS += -DCFG_FEATURE_KA_ALLOC_INTERFACE
-            EXTRA_CFLAGS += -DCFG_FEATURE_HOST_LOG
+            ccflags-y += -DCFG_FEATURE_KA_ALLOC_INTERFACE
+            ccflags-y += -DCFG_FEATURE_HOST_LOG
         endif
     else
         ifneq ($(filter $(PRODUCT), ascend310B ascend310Brc ascend310p ascend910B ascend910),)
-            EXTRA_CFLAGS += -DCFG_FEATURE_KA_ALLOC_INTERFACE
+            ccflags-y += -DCFG_FEATURE_KA_ALLOC_INTERFACE
         endif
-        EXTRA_CFLAGS += -DCFG_FEATURE_DEVICE_ENV
+        ccflags-y += -DCFG_FEATURE_DEVICE_ENV
     endif
-    EXTRA_CFLAGS += -DCFG_FEATURE_MEMALLOC_MODULE_TYPE=3
-    EXTRA_CFLAGS += -DCFG_FEATURE_MEMALLOC_SUBMODULE_TYPE=2
-    EXTRA_CFLAGS += -I$(DRIVER_KERNEL_OPEN_DIR)/src/kernel_adapt/include
-    EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/inc/dbl
-    EXTRA_CFLAGS += -I$(TOP_DIR)/inc/driver
-    EXTRA_CFLAGS += -I$(TOP_DIR)/abl/libc_sec/include
-    EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/inc
-    EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/common
+    ccflags-y += -DCFG_FEATURE_MEMALLOC_MODULE_TYPE=3
+    ccflags-y += -DCFG_FEATURE_MEMALLOC_SUBMODULE_TYPE=2
+    ccflags-y += -I$(DRIVER_KERNEL_OPEN_DIR)/src/kernel_adapt/include
+    ccflags-y += -I$(DRIVER_KERNEL_DIR)/inc/dbl
+    ccflags-y += -I$(TOP_DIR)/inc/driver
+    ccflags-y += -I$(TOP_DIR)/abl/libc_sec/include
+    ccflags-y += -I$(DRIVER_KERNEL_DIR)/inc
+    ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/common
 
     ifneq ($(filter $(PRODUCT),  ascend610 bs9sx1a ascend610Lite ascend610Liteesl),)
-        EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_MDC_V51
+        ccflags-y += -DCFG_SOC_PLATFORM_MDC_V51
     endif
     ifneq ($(filter $(PRODUCT),  as31xm1),)
-        EXTRA_CFLAGS += -DCFG_FEATURE_DMS_SUPPORT_ALL
-        EXTRA_CFLAGS += -DCFG_SOC_PLATFORM_MDC_V11
+        ccflags-y += -DCFG_FEATURE_DMS_SUPPORT_ALL
+        ccflags-y += -DCFG_SOC_PLATFORM_MDC_V11
     endif
     ifneq ($(filter $(PRODUCT), ascend910B), )
-        EXTRA_CFLAGS += -DCFG_FEATURE_SRIOV
-        EXTRA_CFLAGS += -DCFG_FEATURE_TOPOLOGY_BY_HCCS_STATUS
+        ccflags-y += -DCFG_FEATURE_SRIOV
+        ccflags-y += -DCFG_FEATURE_TOPOLOGY_BY_HCCS_STATUS
     endif
     ifneq ($(filter $(PRODUCT), ascend910B ascend310p), )
-        EXTRA_CFLAGS += -DCFG_FEATURE_VFG
+        ccflags-y += -DCFG_FEATURE_VFG
     endif
     ifneq ($(filter $(PRODUCT), ascend910B ascend310p), )
-        EXTRA_CFLAGS += -DCFG_CHIP_INFO_FROM_DEVINFO
+        ccflags-y += -DCFG_CHIP_INFO_FROM_DEVINFO
     endif
 
     ifneq ($(filter $(PRODUCT), ascend310 ascend310p ascend910 ascend910B ascend310B ascend310Besl ascend310Bemu),)
-        EXTRA_CFLAGS += -DCFG_FEATURE_EP_MODE
+        ccflags-y += -DCFG_FEATURE_EP_MODE
     endif
     ifeq ($(PRODUCT_SIDE), device)
         ifneq ($(filter $(PRODUCT), helper310p ascend310Brc ascend310Brcesl ascend310Brcemu as31xm1),)
-            EXTRA_CFLAGS += -DCFG_FEATURE_RC_MODE
+            ccflags-y += -DCFG_FEATURE_RC_MODE
         endif
     endif
 endif
 
 ifneq ($(NOT_SUPPORT_SP), y)
-    EXTRA_CFLAGS += -fstack-protector-all
+    ccflags-y += -fstack-protector-all
 endif
 
 ifeq ($(TARGET_BUILD_TYPE),debug)
-    EXTRA_CFLAGS += -DCFG_BUILD_DEBUG
+    ccflags-y += -DCFG_BUILD_DEBUG
 endif
 
 ccflags-y += -Wall -Werror -Wtrampolines $(WDATE_TIME) -Wfloat-equal -Wvla -Wundef

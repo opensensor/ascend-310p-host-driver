@@ -106,7 +106,7 @@ typedef struct pci_driver ka_pci_driver_t;
 #define ka_pci_free_irq_vectors(dev)    pci_free_irq_vectors(dev)
 #define ka_pci_enable_msix_range(dev, entries, minvec, maxvec)    pci_enable_msix_range(dev, entries, minvec, maxvec)
 
-ka_bus_type_t *ka_pci_get_bus_type(void);
+const ka_bus_type_t *ka_pci_get_bus_type(void);
 unsigned char ka_pci_get_bus_number(ka_pci_dev_t *pdev);
 #define KA_PCI_SLOT(devfn) PCI_SLOT(devfn)
 #define KA_PCI_FUNC(devfn) PCI_FUNC(devfn)

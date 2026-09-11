@@ -6,8 +6,8 @@ ifeq ($(TOP_DIR),)
 		drv_devmng_host-y += sensor/dms_sensor_discrete.o
 		drv_devmng_host-y += sensor/dms_sensor_general.o
 		drv_devmng_host-y += sensor/config/dms_sensor_type.o
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dms/sensor
-		EXTRA_CFLAGS += -I$(HIAI_DKMS_DIR)/dms/sensor/config
+		ccflags-y += -I$(HIAI_DKMS_DIR)/dms/sensor
+		ccflags-y += -I$(HIAI_DKMS_DIR)/dms/sensor/config
 	endif
 else #for CMake & ctrl cpu open
 	ifeq ($(PRODUCT_SIDE), host)
@@ -25,6 +25,6 @@ else #for CMake & ctrl cpu open
 		$(MODULE_NAME)-y += sensor/dms_sensor_general.o
 		$(MODULE_NAME)-y += sensor/config/dms_sensor_type.o
 	endif
-	EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/dms/sensor
-	EXTRA_CFLAGS += -I$(DRIVER_KERNEL_DIR)/src/dms/sensor/config
+	ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/dms/sensor
+	ccflags-y += -I$(DRIVER_KERNEL_DIR)/src/dms/sensor/config
 endif

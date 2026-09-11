@@ -86,7 +86,11 @@ enum msi_desc_filter filter = MSI_DESC_ASSOCIATED;
 #endif
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 6, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 13, 0)
+MODULE_IMPORT_NS("CXL");
+#else
 MODULE_IMPORT_NS(CXL);
+#endif
 #define DEVDRV_PCI_EXP_AER_FLAGS (PCI_EXP_DEVCTL_CERE | PCI_EXP_DEVCTL_NFERE | \
     PCI_EXP_DEVCTL_FERE | PCI_EXP_DEVCTL_URRE)
 STATIC int pci_enable_pcie_error_reporting(struct pci_dev *dev)

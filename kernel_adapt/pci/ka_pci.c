@@ -19,7 +19,7 @@
 #include "ka_pci_pub.h"
 #include "ka_define.h"
 
-ka_bus_type_t *ka_pci_get_bus_type(void)
+const ka_bus_type_t *ka_pci_get_bus_type(void)
 {
     return &pci_bus_type;
 }
