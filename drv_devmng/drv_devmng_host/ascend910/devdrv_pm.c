@@ -379,8 +379,7 @@ int devdrv_refresh_aicore_info_init(u32 dev_id)
     KA_TASK_INIT_WORK(&g_aicore_info[dev_id]->work, devdrv_refresh_aicore_info_work);
     g_aicore_info[dev_id]->dev_id = dev_id;
 
-    ka_system_hrtimer_init(&g_aicore_info[dev_id]->hrtimer, KA_CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-    g_aicore_info[dev_id]->hrtimer.function = devdrv_refresh_aicore_info;
+    hrtimer_setup(&g_aicore_info[dev_id]->hrtimer, devdrv_refresh_aicore_info, KA_CLOCK_MONOTONIC, HRTIMER_MODE_REL);
     ka_system_hrtimer_start(&g_aicore_info[dev_id]->hrtimer,
                             ka_system_ktime_set(DEVDRV_H2D_CYCLE, 0), HRTIMER_MODE_REL);
 

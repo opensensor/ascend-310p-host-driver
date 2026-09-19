@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0-only
+import re
 import subprocess
 import tempfile
 import unittest
@@ -33,6 +34,18 @@ class PortTests(unittest.TestCase):
 
     def test_crc16_known_vectors(self):
         self.compile_and_run("crc16_test", "kernel_adapt/base")
+
+    def test_hrtimer_callbacks_are_registered_during_setup(self):
+        legacy_init = re.compile(r"\b(?:ka_system_)?hrtimer_init\s*\(")
+        offenders = []
+        for source in ROOT.rglob("*.c"):
+            if any(part.startswith("build-") for part in source.parts):
+                continue
+            if legacy_init.search(source.read_text(errors="replace")):
+                offenders.append(str(source.relative_to(ROOT)))
+        self.assertEqual(
+            offenders, [], "hrtimer callbacks must be passed directly to hrtimer_setup"
+        )
 
     def test_dkms_profiles_have_aligned_arrays(self):
         for profile, virtual, expected in (

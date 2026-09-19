@@ -346,8 +346,7 @@ void vmngh_bw_data_clear_timer_init(u32 dev_id, u32 vfid)
 
     ka_task_spin_lock_init(&g_clear_timer.bandwidth_update_lock);
 
-    ka_system_hrtimer_init(&g_clear_timer.timer, KA_CLOCK_MONOTONIC, KA_HRTIMER_MODE_REL);
-    ka_system_set_hrtimer_func(&g_clear_timer.timer, vmngh_bw_data_clear_event);
+    hrtimer_setup(&g_clear_timer.timer, vmngh_bw_data_clear_event, KA_CLOCK_MONOTONIC, KA_HRTIMER_MODE_REL);
     g_clear_timer.kt = ka_system_ktime_set(1, 0);
     ka_system_hrtimer_start(&g_clear_timer.timer, g_clear_timer.kt, KA_HRTIMER_MODE_REL);
 

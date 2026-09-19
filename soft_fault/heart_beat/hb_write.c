@@ -191,11 +191,10 @@ int heart_beat_write_timer_init(void)
         g_hb_write_block[i].device_status = HEART_BEAT_NOT_INIT;
     }
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 1)
-    hrtimer_init(&g_hb_write_timer.timer, KA_CLOCK_MONOTONIC, KA_HRTIMER_MODE_REL_HARD);
+    hrtimer_setup(&g_hb_write_timer.timer, heart_beat_write_count, KA_CLOCK_MONOTONIC, KA_HRTIMER_MODE_REL_HARD);
 #else
-    hrtimer_init(&g_hb_write_timer.timer, KA_CLOCK_MONOTONIC, KA_HRTIMER_MODE_REL);
+    hrtimer_setup(&g_hb_write_timer.timer, heart_beat_write_count, KA_CLOCK_MONOTONIC, KA_HRTIMER_MODE_REL);
 #endif
-    g_hb_write_timer.timer.function = heart_beat_write_count;
     KA_TASK_INIT_WORK(&g_hb_write_timer.work, heart_beart_write_dfx_handler);
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 1)
     hrtimer_start(&g_hb_write_timer.timer, ktime_set(HEART_BEAT_TIMER_EXPIRE_SEC, 0), KA_HRTIMER_MODE_REL_HARD);

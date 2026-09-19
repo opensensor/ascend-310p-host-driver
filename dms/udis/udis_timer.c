@@ -282,8 +282,7 @@ int udis_timer_init(void)
     char *common_wq_name = "udis_timer";
     INIT_LIST_HEAD_RCU(&g_udis_timer.period_task_list);
     mutex_init(&g_udis_timer.task_list_lock);
-    hrtimer_init(&g_udis_timer.timer, KA_CLOCK_MONOTONIC, KA_HRTIMER_MODE_REL);
-    g_udis_timer.timer.function = udis_hrtimer_irq_handle;
+    hrtimer_setup(&g_udis_timer.timer, udis_hrtimer_irq_handle, KA_CLOCK_MONOTONIC, KA_HRTIMER_MODE_REL);
     g_udis_timer.task_num = 0;
     g_udis_timer.common_wq = udis_timer_alloc_workqueue(common_wq_name, WQ_MEM_RECLAIM, UDIS_DEFAULT_WQ_MAX_ACTIVES);
     if (g_udis_timer.common_wq == NULL) {

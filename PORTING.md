@@ -22,7 +22,7 @@ are the authority for the build and exported symbol versions.
 | --- | --- |
 | Kbuild | Modern `scripts/Makefile.lib` uses `ccflags-y`; all legacy module-local flags migrated mechanically. |
 | Timers | A small forced-include header supplies the removed legacy names for Linux 6.15 and newer. It includes only `linux/version.h`, avoiding early inclusion of printk before a source file defines `pr_fmt`. |
-| Hrtimers | Existing callers initialize the timer, assign its callback, then start it. `hrtimer_setup(..., NULL, ...)` preserves that sequence. |
+| Hrtimers | Linux 7 requires the callback in `hrtimer_setup`; passing `NULL` and assigning `.function` later leaves the callback unregistered. Host call sites now pass their callback directly. |
 | PFN lookup | `follow_pfnmap_start` acquires page-table locks; the wrapper copies the PFN before `follow_pfnmap_end` and releases nothing on a failed start. The caller must still hold the mmap lock and protect the mapping lifetime. |
 | Unmapped area | Use `mm_get_unmapped_area`; the mm argument was removed in Linux 6.19. Calling the generic file-dispatching `get_unmapped_area` here could recurse into the same file operation. |
 | PMD entries | On Linux 7, use `pmd_is_migration_entry` and `pmd_leaf` in the vendor walker. The three separately packaged copies receive the same change. |

@@ -268,8 +268,7 @@ int heart_beat_read_timer_init(void)
         return 0;
     }
     
-    hrtimer_init(&g_hb_read_timer.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-    g_hb_read_timer.timer.function = hb_read_timer_irq_handler;
+    hrtimer_setup(&g_hb_read_timer.timer, hb_read_timer_irq_handler, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
     INIT_WORK(&g_hb_read_timer.hb_read_work, heart_beat_read_work);
     g_hb_read_timer.hb_read_wq = alloc_workqueue("%s", WQ_HIGHPRI, 1, "hb_read_work");
 
