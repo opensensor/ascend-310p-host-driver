@@ -251,8 +251,7 @@ STATIC void init_hrtimer(hccs_link_bandwidth_t *hccs_link_bandwidth, hccs_contex
     int profiling_time = hccs_link_bandwidth->profiling_time;
     nsecs = (unsigned long)profiling_time * MS_TO_NS;
     interval = ktime_set(0, nsecs);
-    hrtimer_init(&ctx->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-    ctx->timer.function = hccs_bandwidth_hrtimer_callback;
+    hrtimer_setup(&ctx->timer, hccs_bandwidth_hrtimer_callback, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
     hrtimer_start(&ctx->timer, interval, HRTIMER_MODE_REL);
 }
 

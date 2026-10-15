@@ -143,9 +143,13 @@ struct devdrv_dma_soft_bd {
     atomic_t process_flag;
 };
 
+struct devdrv_dma_profile;
+
 struct devdrv_dma_soft_bd_wait_status {
     int status;
     int valid;
+    struct devdrv_dma_profile *profile; /* Optional host-only trace sample. */
+    u32 spin_us; /* Optional initial query polling budget, zero by default. */
 };
 
 struct devdrv_sync_dma_stat {
@@ -219,6 +223,10 @@ struct devdrv_dma_channel {
     u32 last_irq_type;
     u32 chan_status;
     u32 dma_data_type;
+    /* Protected by cq_lock then lock; lockless observers use READ_ONCE. */
+    bool device_dma_reserved;
+    /* One-way host stream migration, retained until channel destruction. */
+    struct devdrv_dma_channel *host_dma_redirect;
 };
 
 struct devdrv_dma_chan_irq_info {
@@ -287,6 +295,9 @@ struct devdrv_dma_dev {
     struct tasklet_struct single_fault_task;
     struct devdrv_dma_suppression suppression;
     struct devdrv_dma_channel *dma_chan;
+    struct list_head device_dma_registry;
+    bool device_dma_registered;
+    struct devdrv_device_dma_file *device_dma_owner;
 };
 
 struct devdrv_dma_res {

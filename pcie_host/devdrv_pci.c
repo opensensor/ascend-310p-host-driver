@@ -54,6 +54,7 @@
 
 #include "dbl/uda.h"
 #include "devdrv_dma.h"
+#include "devdrv_device_dma.h"
 #include "devdrv_ctrl.h"
 #include "devdrv_msg.h"
 #include "devdrv_pci.h"
@@ -1113,6 +1114,7 @@ STATIC int devdrv_mdev_pm_load_half_probe(struct devdrv_pci_ctrl *pci_ctrl)
     }
     pci_ctrl->dma_dev->dev_id = pci_ctrl->dev_id;
     pci_ctrl->dma_dev->pci_ctrl = pci_ctrl;
+    devdrv_device_dma_attach(pci_ctrl->dma_dev);
 
     devdrv_pci_ctrl_add(pci_ctrl->dev_id, pci_ctrl);
 
@@ -1289,6 +1291,7 @@ void devdrv_load_half_probe(struct devdrv_pci_ctrl *pci_ctrl)
     }
     pci_ctrl->dma_dev->dev_id = pci_ctrl->dev_id;
     pci_ctrl->dma_dev->pci_ctrl = pci_ctrl;
+    devdrv_device_dma_attach(pci_ctrl->dma_dev);
 
     ret = devdrv_atu_rx_atu_proc(pci_ctrl);
     if (ret != 0) {
@@ -2380,11 +2383,15 @@ STATIC int __init devdrv_init_module(void)
         devdrv_err("Devdrv_ctrl_init failed. (ret=%d)\n", ret);
         goto pci_ctrl_mng_uninit;
     }
+    ret = devdrv_device_dma_init();
+    if (ret != 0) {
+        goto ctrl_uninit;
+    }
     /*lint -e64 */
     ret = pci_register_driver(&g_devdrv_driver_ver);
     if (ret != 0) {
         devdrv_err("Insmod devdrv driver failed. (ret=%d)\n", ret);
-        goto ctrl_uninit;
+        goto device_dma_uninit;
     }
     /*lint +e64 */
 
@@ -2413,6 +2420,8 @@ unregister_sentry_node:
 pci_driver_unregister:
 #endif
     pci_unregister_driver(&g_devdrv_driver_ver);
+device_dma_uninit:
+    devdrv_device_dma_uninit();
 ctrl_uninit:
     devdrv_ctrl_uninit();
 pci_ctrl_mng_uninit:
@@ -2430,6 +2439,8 @@ STATIC void __exit devdrv_exit_module(void)
     struct devdrv_ctrl *ctrl = NULL;
     struct uda_dev_type uda_type;
     u32 i;
+
+    devdrv_device_dma_uninit();
 
     for (i = 0; i < MAX_DEV_CNT; i++) {
         ctrl = devdrv_get_top_half_devctrl_by_id(i);

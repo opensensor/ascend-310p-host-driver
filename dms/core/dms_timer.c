@@ -289,12 +289,11 @@ int dms_timer_init(void)
 
     INIT_LIST_HEAD_RCU(&g_timer.node_list);
     ka_task_mutex_init(&g_timer.node_lock);
-    hrtimer_init(&g_timer.timer, KA_CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+    hrtimer_setup(&g_timer.timer, dms_timer_irq_handler, KA_CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 
     for (i = 0; i < MAX_TASK_NUMS; i++) {
         g_timer.ids[i] = TIMER_INVALID_ID;
     }
-    g_timer.timer.function = dms_timer_irq_handler;
     g_timer.task_nums = 0;
 #if defined(CFG_SOC_PLATFORM_MDC_V51) && !defined(AOS_LLVM_BUILD)
     g_timer.workqueue = alloc_workqueue("dms_timer_common", WQ_UNBOUND, 1);

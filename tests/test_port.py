@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: GPL-2.0-only
+import re
 import subprocess
 import tempfile
 import unittest
@@ -9,11 +10,15 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class PortTests(unittest.TestCase):
-    def compile_and_run(self, name, *includes, extracted_functions=()):
+    def compile_and_run(self, name, *includes, extracted_functions=(), extracted_sources=()):
         with tempfile.TemporaryDirectory() as temporary:
             binary = Path(temporary) / name
-            if extracted_functions:
-                fragments = []
+            if extracted_functions or extracted_sources:
+                fragments = [
+                    "\n".join(line for line in (ROOT / filename).read_text().splitlines()
+                              if not line.startswith("#include"))
+                    for filename in extracted_sources
+                ]
                 for filename, function in extracted_functions:
                     source = (ROOT / filename).read_text()
                     start = source.index(function + "(")
@@ -87,6 +92,49 @@ class PortTests(unittest.TestCase):
                 (f"vascend_drv/{filename}", function)
                 for filename, function in functions
             ),
+        )
+
+    def test_device_dma_reservation_and_host_dispatch(self):
+        self.compile_and_run(
+            "device_dma_reservation_test",
+            "inc/driver",
+            extracted_functions=(
+                ("pcie_host/devdrv_dma.c", "devdrv_dma_chan_data_type_init"),
+                ("pcie_host/devdrv_dma.c", "devdrv_res_dma_traffic"),
+                ("pcie_host/devdrv_device_dma.c", "devdrv_device_dma_choose_channel"),
+                ("pcie_host/devdrv_device_dma.c", "devdrv_device_dma_try_claim"),
+                ("pcie_host/devdrv_device_dma.c", "devdrv_device_dma_drop"),
+                ("pcie_host/devdrv_device_dma.c", "devdrv_device_dma_attach"),
+                ("pcie_host/devdrv_device_dma.c", "devdrv_device_dma_detach"),
+                ("pcie_host/devdrv_device_dma.c", "devdrv_device_dma_suspend"),
+                ("pcie_host/devdrv_device_dma.c", "devdrv_device_dma_acquire"),
+                ("pcie_host/devdrv_device_dma.c", "devdrv_device_dma_describe"),
+                ("pcie_host/devdrv_device_dma.c", "devdrv_device_dma_source_ioctl"),
+                ("pcie_host/devdrv_device_dma.c", "devdrv_device_dma_ioctl"),
+                ("pcie_host/devdrv_device_dma.c", "devdrv_device_dma_open"),
+                ("pcie_host/devdrv_device_dma.c", "devdrv_device_dma_close"),
+                ("pcie_host/devdrv_dma.c", "devdrv_dma_get_chan"),
+                ("pcie_host/devdrv_dma.c", "devdrv_dma_get_chan_by_type"),
+                ("pcie_host/devdrv_dma.c", "devdrv_dma_copy"),
+            ),
+        )
+
+    def test_device_dma_source_pin_map_and_failure_cleanup(self):
+        self.compile_and_run(
+            "device_dma_source_test", "inc/driver",
+            extracted_sources=("pcie_host/devdrv_device_dma_source.c",),
+        )
+
+    def test_hrtimer_callbacks_are_registered_during_setup(self):
+        legacy_init = re.compile(r"\b(?:ka_system_)?hrtimer_init\s*\(")
+        offenders = []
+        for source in ROOT.rglob("*.c"):
+            if any(part.startswith("build-") for part in source.parts):
+                continue
+            if legacy_init.search(source.read_text(errors="replace")):
+                offenders.append(str(source.relative_to(ROOT)))
+        self.assertEqual(
+            offenders, [], "hrtimer callbacks must be passed directly to hrtimer_setup"
         )
 
     def test_dkms_profiles_have_aligned_arrays(self):

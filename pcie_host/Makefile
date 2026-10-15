@@ -119,7 +119,7 @@ endif
 obj-m   += drv_pcie_host.o
 drv_pcie_host-objs := devdrv_dma.o devdrv_msg.o devdrv_ctrl.o devdrv_sysfs.o devdrv_pci.o devdrv_common_msg.o devdrv_device_load.o
 drv_pcie_host-objs += devdrv_atu_interface.o devdrv_vpc.o
-drv_pcie_host-objs += interfaces/devdrv_dma_interface.o
+drv_pcie_host-objs += interfaces/devdrv_dma_interface.o devdrv_device_dma.o devdrv_device_dma_source.o
 drv_pcie_host-objs += devdrv_smmu.o
 drv_pcie_host-objs += devdrv_pcie_link_info.o
 drv_pcie_host-objs += devdrv_pm.o

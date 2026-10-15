@@ -45,6 +45,7 @@
 #include "devdrv_pcie_link_info.h"
 #include "devdrv_ctrl.h"
 #include "devdrv_dma.h"
+#include "devdrv_device_dma.h"
 #include "devdrv_pci.h"
 #include "devdrv_msg.h"
 #include "devdrv_util.h"
@@ -441,6 +442,7 @@ STATIC int devdrv_sriov_event_disable_notify(struct devdrv_pci_ctrl *pci_ctrl)
         pci_ctrl->ops.bind_irq(pci_ctrl);
     }
     devdrv_res_dma_traffic(pci_ctrl->dma_dev);
+    devdrv_device_dma_attach(pci_ctrl->dma_dev);
 
     return 0;
 }
@@ -474,6 +476,10 @@ int devdrv_sriov_enable(u32 dev_id)
         return -EINVAL;
     }
 
+    ret = devdrv_device_dma_suspend(pci_ctrl->dma_dev);
+    if (ret != 0) {
+        return ret;
+    }
     pci_ctrl->is_sriov_enabled = DEVDRV_SRIOV_ENABLE;
     devdrv_sriov_pf_dma_traffic(pci_ctrl->dma_dev);
     for (i = 1; i < pci_ctrl->dma_dev->remote_chan_num; i++) {

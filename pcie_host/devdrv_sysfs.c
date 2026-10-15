@@ -1063,6 +1063,38 @@ static DEVICE_ATTR(bus_name, S_IRUSR | S_IRGRP, devdrv_sysfs_get_bus_name, NULL)
 static DEVICE_ATTR(hotreset_flag, S_IWUSR | S_IWGRP, NULL, devdrv_sysfs_set_hotreset_flag);
 static DEVICE_ATTR(common_msg, S_IRUSR | S_IRGRP, devdrv_sysfs_get_common_msg, NULL);
 static DEVICE_ATTR(non_trans_msg, S_IRUSR | S_IRGRP, devdrv_sysfs_get_non_trans_msg, NULL);
+/* Local metadata only: no firmware RPC and no physical addresses. */
+STATIC ssize_t devdrv_sysfs_device_dma_show(struct device *dev,
+    struct device_attribute *attr, char *buf)
+{
+    struct devdrv_pci_ctrl *pci_ctrl = devdrv_sysfs_get_pci_ctrl_by_dev(dev);
+    struct devdrv_dma_dev *dma_dev;
+    u32 i, retired = 0;
+
+    if ((pci_ctrl == NULL) || (pci_ctrl->dma_dev == NULL)) {
+        return -ENODEV;
+    }
+    dma_dev = pci_ctrl->dma_dev;
+    for (i = 0; i < dma_dev->remote_chan_num; i++) {
+        struct devdrv_dma_channel *chan = &dma_dev->dma_chan[i];
+
+        if (READ_ONCE(chan->host_dma_redirect)) {
+            retired++;
+        }
+        if (READ_ONCE(chan->device_dma_reserved)) {
+            return sysfs_emit(buf, "dev_id=%u reserved=1 channel=%u host_traffic_channels=%u "
+                "sq_depth=%u cq_depth=%u host_routing_isolated=1 device_submit=0\n",
+                dma_dev->dev_id, chan->chan_id,
+                dma_dev->data_chan[DEVDRV_DMA_DATA_TRAFFIC].chan_num - 1,
+                chan->sq_depth, chan->cq_depth);
+        }
+    }
+    return sysfs_emit(buf, "dev_id=%u reserved=0 retired_host_channels=%u "
+        "host_traffic_channels=%u host_routing_isolated=1 device_submit=0\n",
+        dma_dev->dev_id, retired, dma_dev->data_chan[DEVDRV_DMA_DATA_TRAFFIC].chan_num - retired);
+}
+
+static DEVICE_ATTR(device_dma, 0444, devdrv_sysfs_device_dma_show, NULL);
 static DEVICE_ATTR(dma_info, S_IRUGO, devdrv_sysfs_sync_dma_info_show, NULL);
 static DEVICE_ATTR(aer_info, S_IRUSR | S_IRGRP, devdrv_sysfs_aer_info_show, NULL);
 static DEVICE_ATTR(dump_dfx_part1, S_IRUSR | S_IRGRP, devdrv_sysfs_dump_dfx_part1_show, NULL);
@@ -1095,6 +1127,7 @@ static struct attribute *g_devdrv_sysfs_msg_attrs[] = {
     &dev_attr_common_msg.attr,
     &dev_attr_non_trans_msg.attr,
     &dev_attr_dma_info.attr,
+    &dev_attr_device_dma.attr,
     NULL,
 };
 

@@ -1,0 +1,56 @@
+Bounded host DMA query polling
+=============================
+
+Runtime control (root writable):
+  /sys/module/drv_pcie_host/parameters/dma_query_spin_us
+
+Default 0 preserves the existing query/sleep policy. Values 1 through 20 select
+the initial polling budget in microseconds. Values above 20 and malformed
+values are rejected without changing the current setting. No environment
+variable, device firmware modification, or userspace API change is needed.
+
+The budget is sampled once for each synchronous, query-mode physical-channel
+submission of at most 8192 bytes. Async requests, IRQ-mode requests, larger
+copies and VPC forwarding retain their original behavior. The distinct
+small-packet helper does not opt into this path. The driver does not change
+the transfer's interrupt flags or claim a dedicated hardware queue.
+
+Polling calls the existing completion-queue processing function, retaining its
+locking and status publication. It does not disable interrupts or preemption.
+A reschedule request, device disable, or expired budget exits polling. An
+observed completion returns through the original status/error checks. On
+budget expiry, the original query/sleep loop, timeout counter, and error path
+run unchanged. Falling back to IRQ wait would be incorrect for descriptors
+that did not request a completion interrupt.
+
+The budget bounds additional polling checks, not time preempted by Linux or
+time already spent draining a completion queue. It is not a real-time deadline.
+The 20-us limit is an experiment limit, not a recommended default. Compare
+0, 2, 5, and 10 with identical workloads and affinity. Restore 0 immediately
+if correctness, concurrent workloads, tail latency, or CPU use regresses.
+
+Examples (change at runtime, no reload):
+  echo 2 | sudo tee /sys/module/drv_pcie_host/parameters/dma_query_spin_us
+  echo 0 | sudo tee /sys/module/drv_pcie_host/parameters/dma_query_spin_us
+
+Profiling event ascend_dma:ascend_dma_sync adds:
+  spin_budget_us: effective budget for this request, 0 if ineligible/disabled.
+  spin_queries: completion checks performed during the initial polling phase.
+  spin_completed: 1 if completion was observed during initial polling.
+  spin_ns: elapsed host time in the initial polling phase, including preemption.
+The original queries/sleeps/sleep_ns fields describe the fallback query loop.
+spin_ns and sleep_ns are disjoint subsets of wait time; they overlap the
+submission-to-observed-completion interval. Do not sum them with total time.
+
+profile-dma.py accepts both old and extended records and groups by effective
+polling budget, preventing mixed policies from contaminating percentiles.
+Use tracing only to explain behavior; compare speed and CPU cost with tracing
+off. A contiguous 5120-byte copy does not represent sixteen random PLE rows or
+the device-to-host request/host-to-device response round trip.
+
+CPU tests compile the actual wait and submission functions with controlled
+completion and clock behavior. They check disabled-mode clock avoidance,
+completion during polling, expiry and sleep fallback, scheduler pressure,
+device disable, unchanged timeout counts, size/mode eligibility, and profiling
+classification. Hardware validation receipts are kept separately with each
+deployed bundle. The source default remains zero until broader qualification.

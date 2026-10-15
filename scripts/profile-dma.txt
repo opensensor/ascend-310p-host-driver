@@ -1,0 +1,105 @@
+Ascend host DMA profiling (candidate, not yet hardware validated)
+================================================================
+
+The host driver provides the optional tracefs event:
+  ascend_dma:ascend_dma_sync
+
+The event is off by default. Disabled requests take no profiling clock reads,
+do not sum descriptor sizes, and write no trace records. There are still small
+branch, pointer-initialization, and code-size costs. Enabling the event adds
+clock reads and one trace record per physical-channel synchronous attempt.
+Event filters reduce recorded output, not all instrumentation overhead.
+
+Scope
+-----
+This profiles devdrv_dma_chan_copy, including failures before submission.
+It does not profile address conversion/pinning, userspace HAL calls, NPU row-ID
+generation, the separate small-packet helper, VPC/virtual-device forwarding,
+or asynchronous requests. Thus total_ns is not full PLE lookup latency.
+An empty capture is not proof of zero latency: the workload may use another
+path. No wait-mode policy, timeout, DMA ordering, or firmware was changed.
+
+Record fields
+-------------
+device/channel: driver identifiers, not PCI bus IDs or npu-smi card IDs.
+nodes/bytes: descriptor-node count and summed bytes in this attempt.
+direction: vendor devdrv_dma_direction enum (read the matching driver header).
+wait_mode: 1 = interrupt; 2 = query. This is the requested mode.
+status: return value from this physical-channel attempt, including retries.
+start_ns: monotonic host timestamp before channel lock/descriptor preparation.
+submit_ns: immediately before the submission doorbell, zero if not submitted.
+wait_ns: immediately before the synchronous completion wait.
+complete_ns: driver observes completion, before publishing status/validity.
+end_ns: after the synchronous wait/error handling and before trace emission.
+sleeps/sleep_ns: query-mode sleep calls and their total observed elapsed time.
+queries: query-loop completion checks. The interrupt fallback's checks are not
+counted here. A completion may arrive before the caller enters its wait.
+
+All timestamps are software observations. submit-to-complete includes PCIe,
+engine scheduling, and polling/interrupt observation delay; it is not pure
+hardware DMA latency. complete-to-return includes wake-up/scheduling delay and
+remaining driver work. Sleep duration includes scheduling delay. A transfer
+can finish during a query sleep; these intervals overlap. Do not add sleep or
+wait duration to total. The event excludes its own trace emission overhead.
+The retry-enabled S2S build can include its retry-decision delay in end_ns.
+
+Collection after loading a validated driver bundle
+-------------------------------------------------
+Use a dedicated terminal. The command creates a private trace instance and
+does not change the global tracer or launch the workload as root:
+
+  sudo python3 scripts/profile-dma.py capture \
+      --output /tmp/ple-dma-baseline-01 --seconds 30 \
+      --filter 'device == 0'
+
+After it prints "Recording", launch the normal unprivileged workload in a
+second terminal. Warm up first, then collect repeated 320-byte, 5,120-byte,
+page-crossing, and batched-row tests on each chip. Keep initialization and
+teardown out of latency comparisons where possible. Match input bytes,
+mapping lifetime, concurrency, CPU affinity, and destination allocation.
+Use a unique output directory for each run.
+
+The collector disables its event, saves trace.txt, capture.json (per-CPU loss
+counters), and summary.json, then removes its private instance. It also cleans
+up on ordinary exceptions/KeyboardInterrupt. As with any process, SIGKILL
+cannot run cleanup: inspect/remove only its ascend_dma_<UUID> instance then.
+
+Summaries group by device, channel, direction, bytes, and wait mode. They show
+nearest-rank p50/p95/p99/min/max for successful complete samples only; failed
+and malformed/incomplete samples are reported separately. Buffer overruns
+invalidate distribution comparisons; increase the buffer or shorten the run.
+For offline analysis without root:
+
+  python3 scripts/profile-dma.py analyze /tmp/ple-dma-baseline-01/trace.txt
+
+Standalone analysis cannot recover dropped-event counts; retain capture.json.
+Always measure application throughput/latency with tracing disabled as well
+to quantify profiling overhead. Do not compare profiled and unprofiled runs
+as if they were the same workload instrumentation.
+
+Validation and deployment boundary
+----------------------------------
+Build the whole host module set for the running kernel and verify its manifest
+and symbol versions using scripts/build-host.sh. The profiling changes add a
+host-only pointer to the internal synchronous wait state; no userspace ioctl
+or device descriptor ABI changes. Keep a rollback module bundle. The build
+script packages modules but does not install, unload, reboot, or alter firmware.
+
+CPU tests compile the actual modified submission function and profiling helpers
+with deterministic completion/clock mocks. They cover disabled instrumentation,
+query/interrupt metadata, completion before wait, asynchronous/VPC exclusion,
+reservation conflicts, queue exhaustion, invalid descriptors, device removal,
+timeout samples, and malformed trace/error filtering. These tests do not prove
+runtime concurrency, measured speedup, or profiling overhead on hardware.
+
+The first live acceptance after the driver swap must check:
+  - event disabled by default, exact copy results with profiling on and off;
+  - query/interrupt traces agree with a short independent function trace;
+  - timestamp ordering, zero dropped records, and all-chip health;
+  - concurrent ordinary DMA and source reservations still coexist;
+  - repeated measurements with tracing disabled quantify overhead.
+
+References
+----------
+https://docs.kernel.org/trace/tracepoints.html
+https://docs.kernel.org/trace/events.html

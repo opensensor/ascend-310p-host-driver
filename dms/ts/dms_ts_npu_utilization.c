@@ -118,8 +118,7 @@ STATIC enum hrtimer_restart dms_npu_util_timer_callback(struct hrtimer *timer)
 STATIC int dms_ts_npu_util_timer_init(void)
 {
     g_npu_util_timer.period = ms_to_ktime(NPU_UTILIZATION_CYCLE_MS);
-    hrtimer_init(&g_npu_util_timer.timer, KA_CLOCK_MONOTONIC, KA_HRTIMER_MODE_REL);
-    g_npu_util_timer.timer.function = dms_npu_util_timer_callback;
+    hrtimer_setup(&g_npu_util_timer.timer, dms_npu_util_timer_callback, KA_CLOCK_MONOTONIC, KA_HRTIMER_MODE_REL);
     hrtimer_start(&g_npu_util_timer.timer, g_npu_util_timer.period, KA_HRTIMER_MODE_REL);
     dms_info("Dms_ts_npu_util_timer_init success.\n");
     return 0;

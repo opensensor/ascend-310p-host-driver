@@ -9,6 +9,14 @@ virtualization enabled. The virtualization port requires driver changes only;
 no kernel patch or KVM-private export is used. This is a compile-validated port;
 it has not been installed, loaded, or tested with an Ascend card.
 
+The opt-in [device DMA reservation](DEVICE_DMA.md), source registration,
+[profiling](scripts/profile-dma.txt) and [bounded polling](scripts/dma-query-poll.txt)
+changes were built and hardware-tested on four 310P NPUs with Linux
+`7.0.0-38-generic` using the normal host profile. See
+[the October 15 qualification](DMA_VALIDATION_20261015.txt). Regular loading
+reserves no queue and polling defaults to zero. Autonomous device submission
+is not implemented. This qualification does not establish virtualization support.
+
 ## Build and validate
 
 Requirements: matching kernel headers (including `Module.symvers`), GNU Make,
@@ -71,9 +79,11 @@ The vendor guest-mode configuration remains in the source but is unvalidated.
   lifetime with callbacks, unwind failed opens, and invalidate every intersecting
   cached RAM slot before returning from a VFIO unmap callback.
 
-No userspace ioctl definitions, HAL libraries, device firmware, or device OS
-files were changed. The original userspace ABI is an implementation constraint;
-successful compilation does not establish HAL interoperability.
+The Linux 7 port preserved the vendor userspace ioctl definitions, HAL
+libraries, device firmware, and device OS files. The additional device DMA
+candidate uses a separate optional ioctl node; the vendor ABI remains an
+implementation constraint. Successful compilation does not establish HAL
+interoperability.
 
 ## Validation and limits
 
@@ -84,7 +94,7 @@ and all strong undefined symbols and recorded CRCs resolve against either the
 target kernel's exports or this build's exports. An isolated `depmod -n -e -E`
 check also found no missing symbols or version disagreements.
 
-Seven CPU regression tests cover PFN lookup and lock pairing, CRC known vectors,
+Nine CPU regression tests cover PFN lookup and lock pairing, CRC known vectors,
 DKMS module arrays, VFIO full/partial/error pin ownership, KVM slot visibility,
 IOMMU allocation and group-reference cleanup, failed guest opens, device-specific
 pin ownership, and repeated/partial/multi-slot/full-space invalidations. The

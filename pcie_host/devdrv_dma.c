@@ -41,6 +41,12 @@
 #include <linux/version.h>
 
 #include "devdrv_dma.h"
+#include "devdrv_dma_poll.h"
+
+#define CREATE_TRACE_POINTS
+#include "devdrv_dma_trace.h"
+
+#include "devdrv_device_dma.h"
 #include "devdrv_util.h"
 #include "devdrv_pci.h"
 #include "devdrv_ctrl.h"
@@ -65,6 +71,30 @@ static inline void *dma_zalloc_coherent(struct device *dev, size_t size, dma_add
     return ret;
 }
 #endif
+
+/* Opt-in host query polling. Existing wait/IRQ policy remains the default. */
+static unsigned int dma_query_spin_us;
+
+static int devdrv_dma_set_query_spin_us(const char *value, const struct kernel_param *param)
+{
+    unsigned int requested;
+    int ret = kstrtouint(value, 0, &requested);
+
+    if (ret != 0)
+        return ret;
+    if (requested > DEVDRV_DMA_QUERY_SPIN_MAX_US)
+        return -ERANGE;
+    WRITE_ONCE(*(unsigned int *)param->arg, requested);
+    return 0;
+}
+
+static const struct kernel_param_ops devdrv_dma_query_spin_ops = {
+    .set = devdrv_dma_set_query_spin_us,
+    .get = param_get_uint,
+};
+module_param_cb(dma_query_spin_us, &devdrv_dma_query_spin_ops, &dma_query_spin_us, 0644);
+MODULE_PARM_DESC(dma_query_spin_us,
+    "Initial query polling budget in us for sync copies <=8192 bytes (0=off, maximum 20)");
 
 /* dma channel sq submit interface */
 STATIC void devdrv_dma_ch_sq_submit(struct devdrv_dma_channel *dma_chan)
@@ -122,6 +152,7 @@ STATIC void devdrv_dma_done_proc(struct devdrv_dma_soft_bd *soft_bd, struct devd
     if (soft_bd->copy_type == DEVDRV_DMA_SYNC) {
         wait_status = (struct devdrv_dma_soft_bd_wait_status *)soft_bd->priv;
         if (wait_status != NULL) {
+            devdrv_dma_profile_complete(wait_status->profile);
             wait_status->status = soft_bd->status;
             wmb();
             wait_status->valid = DEVDRV_DISABLE;
@@ -258,7 +289,8 @@ STATIC void devdrv_dma_done_handle(struct devdrv_dma_channel *dma_chan)
         return;
     }
 
-    if ((dma_chan->chan_status != DEVDRV_DMA_CHAN_ENABLED) || (pci_ctrl->device_status == DEVDRV_DEVICE_UDA_RM)) {
+    if (READ_ONCE(dma_chan->device_dma_reserved) || (dma_chan->chan_status != DEVDRV_DMA_CHAN_ENABLED) ||
+        (pci_ctrl->device_status == DEVDRV_DEVICE_UDA_RM)) {
         devdrv_dma_done_unlock(dma_chan, is_mdev_vm);
         return;
     }
@@ -349,6 +381,10 @@ STATIC irqreturn_t devdrv_dma_done_interrupt(int irq, void *data)
 {
     struct devdrv_dma_channel *dma_chan = (struct devdrv_dma_channel *)data;
 
+    if (READ_ONCE(dma_chan->device_dma_reserved)) {
+        return IRQ_HANDLED;
+    }
+
     if ((dma_chan->dma_dev->dev_status != DEVDRV_DMA_ALIVE) || (dma_chan->chan_status != DEVDRV_DMA_CHAN_ENABLED)) {
         devdrv_err_spinlock("Dma channel disable. (chan_id=%d)\n", dma_chan->chan_id);
         return IRQ_HANDLED;
@@ -373,7 +409,7 @@ STATIC void devdrv_dma_done_guard_work_sched(struct devdrv_dma_dev *dma_dev)
 
     for (i = 0; i < dma_dev->remote_chan_num; i++) {
         dma_chan = &dma_dev->dma_chan[i];
-        if (dma_chan->chan_status != DEVDRV_DMA_CHAN_ENABLED) {
+        if (READ_ONCE(dma_chan->device_dma_reserved) || (dma_chan->chan_status != DEVDRV_DMA_CHAN_ENABLED)) {
             continue;
         }
         if ((devdrv_get_env_boot_type(dma_dev->dev_id) == DEVDRV_PHY_BOOT) ||
@@ -704,7 +740,7 @@ struct devdrv_dma_channel *devdrv_dma_get_chan(u32 dev_id, enum devdrv_dma_data_
 {
     struct devdrv_dma_dev *dma_dev = NULL;
     struct data_type_chan *data_chan = NULL;
-    u32 chan_id;
+    u32 chan_id, i;
 
     if (type >= DEVDRV_DMA_DATA_TYPE_MAX) {
         return NULL;
@@ -718,10 +754,15 @@ struct devdrv_dma_channel *devdrv_dma_get_chan(u32 dev_id, enum devdrv_dma_data_
 
     data_chan = &dma_dev->data_chan[type];
 
-    chan_id = data_chan->chan_start_id + ((data_chan->last_use_chan + 1) % data_chan->chan_num);
-    data_chan->last_use_chan = chan_id;
-
-    return &dma_dev->dma_chan[chan_id];
+    for (i = 0; i < data_chan->chan_num; i++) {
+        chan_id = data_chan->chan_start_id + ((i + data_chan->last_use_chan + 1) % data_chan->chan_num);
+        if (!READ_ONCE(dma_dev->dma_chan[chan_id].device_dma_reserved) &&
+            !READ_ONCE(dma_dev->dma_chan[chan_id].host_dma_redirect)) {
+            data_chan->last_use_chan = chan_id;
+            return &dma_dev->dma_chan[chan_id];
+        }
+    }
+    return NULL;
 }
 
 int devdrv_dma_get_sq_idle_bd_cnt(struct devdrv_dma_channel *dma_chan)
@@ -839,17 +880,58 @@ RETRY_SYNC_WAIT:
     return ret;
 }
 
+/* Keep interrupts/preemption enabled. A reschedule request ends polling.
+ * Budget bounds additional polling, not time spent preempted or draining CQ.
+ * No timeout counters are consumed here; expiry resumes the original loop.
+ */
+STATIC bool devdrv_dma_chan_spin_query(struct devdrv_dma_channel *dma_chan,
+    const struct devdrv_dma_soft_bd_wait_status *wait_status)
+{
+    u64 start, budget_ns;
+    u32 queries = 0;
+    bool completed = false;
+
+    if (wait_status->spin_us == 0)
+        return false;
+    budget_ns = (u64)wait_status->spin_us * NSEC_PER_USEC;
+    start = ktime_get_ns();
+    do {
+        if (READ_ONCE(dma_chan->chan_status) != DEVDRV_DMA_CHAN_ENABLED || need_resched())
+            break;
+        devdrv_dma_done_task((unsigned long)(uintptr_t)dma_chan);
+        queries++;
+        if (READ_ONCE(wait_status->valid) == DEVDRV_DISABLE) {
+            completed = true;
+            break;
+        }
+        cpu_relax();
+    } while (ktime_get_ns() - start < budget_ns);
+
+    if (wait_status->profile != NULL) {
+        wait_status->profile->spin_ns = ktime_get_ns() - start;
+        wait_status->profile->spin_queries = queries;
+        wait_status->profile->spin_completed = completed;
+    }
+    return completed;
+}
+
 STATIC int devdrv_dma_chan_sync_wait_query(u32 dev_id, struct devdrv_dma_channel *dma_chan,
     struct devdrv_dma_soft_bd *soft_bd, const struct devdrv_dma_soft_bd_wait_status *wait_status)
 {
     int wait_cnt = 0;
     u32 process_flag;
     int ret = 0;
+    u64 sleep_start;
+
+    if (devdrv_dma_chan_spin_query(dma_chan, wait_status))
+        return 0;
 
     do {
         if (dma_chan->chan_status != DEVDRV_DMA_CHAN_ENABLED) {
             break;
         }
+        if (wait_status->profile != NULL)
+            wait_status->profile->queries++;
         /* check cq status,update soft_bd and soft_bd_wait_status */
         devdrv_dma_done_task((unsigned long)(uintptr_t)dma_chan);
         /* check soft_bd_wait_status valid */
@@ -873,7 +955,9 @@ STATIC int devdrv_dma_chan_sync_wait_query(u32 dev_id, struct devdrv_dma_channel
             }
             break;
         }
+        sleep_start = devdrv_dma_profile_sleep_begin(wait_status->profile);
         usleep_range(DEVDRV_MSG_WAIT_MIN_TIME, DEVDRV_MSG_WAIT_MAX_TIME);
+        devdrv_dma_profile_sleep_end(wait_status->profile, sleep_start);
     } while (1);
 
     return ret;
@@ -1034,11 +1118,15 @@ STATIC struct devdrv_vpc_msg *devdrv_vpc_dma_sq_desc_addr_alloc(struct devdrv_dm
 int devdrv_dma_chan_copy_by_vpc(u32 dev_id, struct devdrv_dma_channel *dma_chan, struct devdrv_dma_node *dma_node,
     u32 node_cnt, struct devdrv_dma_copy_para *para)
 {
-    struct devdrv_dma_soft_bd_wait_status wait_status;
+    struct devdrv_dma_soft_bd_wait_status wait_status = {0};
     struct devdrv_dma_soft_bd *soft_bd = NULL;
     int ret = 0, err_code;
     int sq_idle_bd_cnt;
     u32 chan_id;
+
+    if (READ_ONCE(dma_chan->device_dma_reserved) || READ_ONCE(dma_chan->host_dma_redirect)) {
+        return -EBUSY;
+    }
 
     if (node_cnt > DEVDRV_VPC_MAX_SQ_DMA_NODE_COUNT) {
         devdrv_err("Dma node_cnt[%u] is too big.\n", node_cnt);
@@ -1178,8 +1266,13 @@ STATIC bool devdrv_dma_chan_copy_retry_judge(u32 dev_id, struct devdrv_dma_soft_
 int devdrv_dma_chan_copy(u32 dev_id, struct devdrv_dma_channel *dma_chan, struct devdrv_dma_node *dma_node,
     u32 node_cnt, struct devdrv_dma_copy_para *para)
 {
-    struct devdrv_dma_soft_bd_wait_status wait_status;
+    struct devdrv_dma_soft_bd_wait_status wait_status = {0};
     struct devdrv_dma_soft_bd *soft_bd = NULL;
+    struct devdrv_dma_profile profile;
+    bool profiling;
+    unsigned int configured_spin_us;
+    u64 copy_bytes;
+    u32 i;
     u32 chan_id;
     int sq_idle_bd_cnt;
     int ret = 0;
@@ -1193,12 +1286,36 @@ RETRY:
         return ret;
     }
 
+    profiling = para->copy_type == DEVDRV_DMA_SYNC && trace_ascend_dma_sync_enabled();
+    configured_spin_us = (para->copy_type == DEVDRV_DMA_SYNC &&
+        para->wait_type == DEVDRV_DMA_WAIT_QUREY) ? READ_ONCE(dma_query_spin_us) : 0;
+    copy_bytes = 0;
+    if (profiling || configured_spin_us != 0) {
+        for (i = 0; i < node_cnt; i++)
+            copy_bytes += dma_node[i].size;
+    }
+    wait_status.spin_us = devdrv_dma_query_spin_budget(configured_spin_us,
+        para->copy_type, para->wait_type, copy_bytes);
+    wait_status.profile = NULL;
+    if (profiling) {
+        devdrv_dma_profile_begin(&profile);
+        profile.bytes = copy_bytes;
+        profile.spin_budget_us = wait_status.spin_us;
+        wait_status.profile = &profile;
+    }
+
     /* wait till chan space enough */
     spin_lock_bh(&dma_chan->lock);
 
+    if (READ_ONCE(dma_chan->device_dma_reserved) || READ_ONCE(dma_chan->host_dma_redirect)) {
+        spin_unlock_bh(&dma_chan->lock);
+        ret = -EBUSY;
+        goto profile_out;
+    }
     if (dma_chan->chan_status != DEVDRV_DMA_CHAN_ENABLED) {
         spin_unlock_bh(&dma_chan->lock);
-        return -ENODEV;
+        ret = -ENODEV;
+        goto profile_out;
     }
 
     chan_id = dma_chan->chan_id;
@@ -1209,7 +1326,8 @@ RETRY:
         spin_unlock_bh(&dma_chan->lock);
         devdrv_warn_spinlock("No space. (dev_id=%u; chan_id=%u; idle_bd=%d; need=%u)\n",
             dev_id, chan_id, sq_idle_bd_cnt, node_cnt);
-        return -ENOSPC;
+        ret = -ENOSPC;
+        goto profile_out;
     }
 
     soft_bd = devdrv_dma_fill_sq_desc_and_soft_bd(dma_chan, dma_node, node_cnt, para);
@@ -1220,7 +1338,8 @@ RETRY:
 #endif
         devdrv_warn_spinlock("Fill sq_desc and soft_bd fail. (dev_id=%u; chan_id=%u; idle_bd=%d; need=%d)\n",
             dev_id, chan_id, sq_idle_bd_cnt, node_cnt);
-        return -EINVAL;
+        ret = -EINVAL;
+        goto profile_out;
     }
 
     if (para->copy_type == DEVDRV_DMA_SYNC) {
@@ -1233,19 +1352,34 @@ RETRY:
     }
 
     wmb();
+    if (profiling)
+        profile.submit_ns = ktime_get_ns();
     devdrv_dma_ch_sq_submit(dma_chan);
 
     spin_unlock_bh(&dma_chan->lock);
 
     if ((para->copy_type == DEVDRV_DMA_SYNC) && (soft_bd != NULL)) {
+        if (profiling)
+            profile.wait_ns = ktime_get_ns();
         ret = devdrv_dma_chan_sync_wait(dev_id, dma_chan, soft_bd, &wait_status);
 #ifdef CFG_FEATURE_AGENT_S2S
         if (devdrv_dma_chan_copy_retry_judge(dev_id, wait_status, &retry_cnt, DEVDRV_DMA_COPY_RETRY_DELAY)) {
+            if (profiling) {
+                profile.end_ns = ktime_get_ns();
+                trace_ascend_dma_sync(dev_id, dma_chan->chan_id, node_cnt,
+                    node_cnt ? dma_node[0].direction : -1, para->wait_type, ret, &profile);
+            }
             goto RETRY;
         }
 #endif
     }
 
+profile_out:
+    if (profiling) {
+        profile.end_ns = ktime_get_ns();
+        trace_ascend_dma_sync(dev_id, dma_chan->chan_id, node_cnt,
+            node_cnt ? dma_node[0].direction : -1, para->wait_type, ret, &profile);
+    }
     return ret;
 }
 
@@ -1270,6 +1404,7 @@ int devdrv_dma_copy(struct devdrv_dma_dev *dma_dev, struct devdrv_dma_node *dma_
 {
     struct devdrv_dma_channel *dma_chan = NULL;
     struct data_type_chan *data_chan = NULL;
+    struct devdrv_dma_channel *redirect;
     u32 entry, i;
     int dev_id;
     int ret = 0;
@@ -1304,6 +1439,10 @@ int devdrv_dma_copy(struct devdrv_dma_dev *dma_dev, struct devdrv_dma_node *dma_
             entry = data_chan->chan_start_id + ((i + data_chan->last_use_chan + 1) % data_chan->chan_num);
             dma_chan = &dma_dev->dma_chan[entry];
             ret = devdrv_dma_chan_copy((u32)dev_id, dma_chan, dma_node, node_cnt, para);
+            if (ret == -EBUSY) {
+                /* A lease consumes capacity; keep the normal shared-pool retry contract. */
+                ret = -ENOSPC;
+            }
             if (ret != -ENOSPC) {
                 data_chan->last_use_chan = entry;
                 break;
@@ -1312,7 +1451,21 @@ int devdrv_dma_copy(struct devdrv_dma_dev *dma_dev, struct devdrv_dma_node *dma_
     } else {
         entry = data_chan->chan_start_id + ((u32)para->instance % (u32)data_chan->chan_num);
         dma_chan = &dma_dev->dma_chan[entry];
+        redirect = READ_ONCE(dma_chan->host_dma_redirect);
+        if (redirect != NULL) {
+            dma_chan = redirect;
+        }
         ret = devdrv_dma_chan_copy((u32)dev_id, dma_chan, dma_node, node_cnt, para);
+        if ((ret == -EBUSY) && (redirect == NULL)) {
+            /* First reservation may have drained/retired this queue between
+             * selection and the SQ lock. Retry only its permanent successor;
+             * never move a fixed instance to an arbitrary available channel.
+             */
+            redirect = READ_ONCE(dma_chan->host_dma_redirect);
+            if (redirect != NULL) {
+                ret = devdrv_dma_chan_copy((u32)dev_id, redirect, dma_node, node_cnt, para);
+            }
+        }
     }
 
     return ret;
@@ -1322,7 +1475,7 @@ STATIC struct devdrv_dma_channel *devdrv_dma_get_chan_by_type(struct devdrv_dma_
                                                               enum devdrv_dma_data_type type)
 {
     struct data_type_chan *data_chan = NULL;
-    u32 chan_id;
+    u32 chan_id, i;
 
     if (type >= DEVDRV_DMA_DATA_TYPE_MAX) {
         devdrv_err("type is out of range. (type=%d)\n", (int)type);
@@ -1334,22 +1487,31 @@ STATIC struct devdrv_dma_channel *devdrv_dma_get_chan_by_type(struct devdrv_dma_
     }
 
     data_chan = &dma_dev->data_chan[type];
-    chan_id = data_chan->chan_start_id + ((data_chan->last_use_chan + 1) % data_chan->chan_num);
-    data_chan->last_use_chan = chan_id;
-
-    return &dma_dev->dma_chan[chan_id];
+    for (i = 0; i < data_chan->chan_num; i++) {
+        chan_id = data_chan->chan_start_id + ((i + data_chan->last_use_chan + 1) % data_chan->chan_num);
+        if (!READ_ONCE(dma_dev->dma_chan[chan_id].device_dma_reserved) &&
+            !READ_ONCE(dma_dev->dma_chan[chan_id].host_dma_redirect)) {
+            data_chan->last_use_chan = chan_id;
+            return &dma_dev->dma_chan[chan_id];
+        }
+    }
+    return NULL;
 }
 
 STATIC int devdrv_dma_chan_copy_sml_pkt(int dev_id, struct devdrv_dma_channel *dma_chan, dma_addr_t dst,
     const void *data, u32 size)
 {
-    struct devdrv_dma_soft_bd_wait_status wait_status;
+    struct devdrv_dma_soft_bd_wait_status wait_status = {0};
     struct devdrv_dma_sq_node *sq_desc = NULL;
     struct devdrv_dma_soft_bd *soft_bd = NULL;
     int connect_type = devdrv_get_connect_protocol((u32)dev_id);
 
     spin_lock_bh(&dma_chan->lock);
 
+    if (READ_ONCE(dma_chan->device_dma_reserved) || READ_ONCE(dma_chan->host_dma_redirect)) {
+        spin_unlock_bh(&dma_chan->lock);
+        return -EBUSY;
+    }
     if (devdrv_dma_get_sq_idle_bd_cnt(dma_chan) < DEVDRV_DMA_SML_PKT_SQ_DESC_NUM) {
         spin_unlock_bh(&dma_chan->lock);
         devdrv_warn("Sq space not enough in small pkt. (dev_id=%d; chan_id=%d; sq_tail=%d; sq_head=%d; sq_depth=%d)\n",
@@ -1968,6 +2130,8 @@ void devdrv_dma_exit(struct devdrv_dma_dev *dma_dev, u32 sriov_flag)
     if (dma_dev == NULL) {
         return;
     }
+
+    devdrv_device_dma_detach(dma_dev);
 
     tasklet_kill(&dma_dev->single_fault_task);
     if ((devdrv_get_env_boot_type(dma_dev->dev_id) == DEVDRV_PHY_BOOT) ||
