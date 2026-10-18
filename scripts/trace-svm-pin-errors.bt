@@ -1,0 +1,57 @@
+#!/usr/bin/env bpftrace
+/* SPDX-License-Identifier: GPL-2.0-only */
+/* sudo bpftrace -B line scripts/trace-svm-pin-errors.bt PID SECONDS PAGES
+ * Read-only tracing; does not change flags, return values, or loaded modules.
+ * Trace the adapter's original errno before SVM converts it to -EFAULT.
+ * These functions return int: cast retval to int32, not int64, on x86-64.
+ * PAGES selects a request size (0 traces all sizes). Entry/return probes add
+ * overhead, which can change the behavior of a race. Do not use traced runs
+ * as performance measurements.
+ */
+
+BEGIN
+{
+    printf("Tracing SVM pin errors for PID %d for %d seconds, pages=%d\n", $1, $2, $3);
+}
+
+kprobe:ka_mm_pin_user_pages_fast
+/pid == $1 && ($3 == 0 || arg1 == $3)/
+{
+    @want[tid] = arg1;
+    @addr[tid] = arg0;
+    @flags[tid] = arg2;
+}
+
+kretprobe:ka_mm_pin_user_pages_fast
+/@want[tid]/
+{
+    if ((int32)retval != (int32)@want[tid]) {
+        printf("RAW_PIN pid=%d tid=%d va=0x%lx flags=0x%lx want=%d ret=%d\n",
+               pid, tid, @addr[tid], @flags[tid], @want[tid], (int32)retval);
+    }
+    delete(@want[tid]);
+    delete(@addr[tid]);
+    delete(@flags[tid]);
+}
+
+kretprobe:devmm_pin_user_pages_fast
+/pid == $1 && (int32)retval < 0/
+{
+    printf("SVM_PIN pid=%d tid=%d ret=%d\n", pid, tid, (int32)retval);
+}
+
+interval:s:1
+{
+    @seconds++;
+    if (@seconds >= $2) {
+        exit();
+    }
+}
+
+END
+{
+    clear(@seconds);
+    clear(@want);
+    clear(@addr);
+    clear(@flags);
+}

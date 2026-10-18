@@ -99,11 +99,14 @@ static int devmm_ka_mm_pin_user_pages_fast(unsigned long start, int nr_pages, in
         }
 #ifndef EMU_ST
         if (tmp_num < 0) {
-            return 0;
+            /* Preserve the kernel errno for the caller's failure log. */
+            return tmp_num;
         }
         devmm_unpin_user_pages(pages, nr_pages, tmp_num);
 #endif
     }
+    devmm_drv_err("Repeated partial page pin. (va=0x%lx; expected_page_num=%d; last_pin_result=%d)\n",
+        start, nr_pages, tmp_num);
     return 0;
 }
 

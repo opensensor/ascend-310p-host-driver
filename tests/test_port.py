@@ -56,6 +56,18 @@ class PortTests(unittest.TestCase):
     def test_crc16_known_vectors(self):
         self.compile_and_run("crc16_test", "kernel_adapt/base")
 
+    def test_svm_pin_errors_and_partial_pin_cleanup(self):
+        self.compile_and_run(
+            "svm_pin_test",
+            extracted_functions=tuple(
+                ("svmdrv/common/devmm_common.c", function)
+                for function in (
+                    "devmm_ka_mm_pin_user_pages_fast",
+                    "devmm_pin_user_pages_fast",
+                )
+            ),
+        )
+
     def test_vfio_pin_ownership_and_invalidation_boundaries(self):
         self.compile_and_run("guest_memory_test", "tests/stubs", "vascend_drv")
 
